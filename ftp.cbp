@@ -31,15 +31,24 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
+		<Unit filename="filesize.h" />
 		<Unit filename="ftpcmd.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="ftpcmd.h" />
+		<Unit filename="ftpcode.h" />
 		<Unit filename="main.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="session.h" />
+		<Unit filename="str.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="str.h" />
+		<Unit filename="strlist.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="strlist.h" />
 		<Unit filename="sysutil.c">
 			<Option compilerVar="CC" />
 		</Unit>

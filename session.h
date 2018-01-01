@@ -1,12 +1,10 @@
 #ifndef SESSION_H_INCLUDED
 #define SESSION_H_INCLUDED
 
+#include "filesize.h"
 #include "sysutil.h"
 #include "strlist.h"
 #include "str.h"
-
-//restart point
-typedef long long filesize_t;
 
 struct _session
 {
