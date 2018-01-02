@@ -73,7 +73,7 @@ int str_equal_internal(const char *p_ptr1,unsigned int ptr1_size,
     {
         return result;
     }
-    return (int)(ptr1_size - ptr2_size)
+    return (int)(ptr1_size - ptr2_size);
 
 }
 int str_equal(const struct mystr* p_str1, const struct mystr* p_str2)
@@ -83,7 +83,7 @@ int str_equal(const struct mystr* p_str1, const struct mystr* p_str2)
 int str_equal_text(const struct mystr* p_str, const char* p_text)
 {
     unsigned int ptext_len = sysutil_strlen(p_text);
-    return (str_equal_internal(p_str->pbuf,p_str->num_len,p_str2,ptext_len) == 0);
+    return (str_equal_internal(p_str->pbuf,p_str->num_len,p_text,ptext_len) == 0);
 }
 void str_append_str(struct mystr* p_str, const struct mystr* p_other)
 {
@@ -138,6 +138,7 @@ void str_split_text_reverse(struct mystr* p_src, struct mystr* p_rhs,
 struct str_locate_result str_locate_char(
   const struct mystr* p_str, char look_char)
 {
+
 }
 struct str_locate_result str_locate_str(
   const struct mystr* p_str, const struct mystr* p_look_str)

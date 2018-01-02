@@ -9,13 +9,12 @@
 	<stdlib.h>
 	"session.h"
 
-1514806585 /home/zyy/ftp/ftp/session.h
+1514897841 /home/zyy/ftp/ftp/session.h
 	"filesize.h"
 	"sysutil.h"
 	"strlist.h"
-	"str.h"
 
-1514812848 /home/zyy/ftp/ftp/sysutil.h
+1514898127 /home/zyy/ftp/ftp/sysutil.h
 	<netinet/in.h>
 	"filesize.h"
 
@@ -23,16 +22,16 @@
 	<netinet/in.h>
 	"str.h"
 
-1514811643 /home/zyy/ftp/ftp/str.h
+1514897945 /home/zyy/ftp/ftp/str.h
 	"filesize.h"
-	"sysutil.h"
 
 1514806534 /home/zyy/ftp/ftp/filesize.h
 
-1514810301 source:/home/zyy/ftp/ftp/str.c
+1514898095 source:/home/zyy/ftp/ftp/str.c
 	"str.h"
+	"sysutil.h"
 
-1514810314 source:/home/zyy/ftp/ftp/strlist.c
+1514897565 source:/home/zyy/ftp/ftp/strlist.c
 	<stdlib.h>
 	"strlist.h"
 

@@ -27,8 +27,6 @@ enum EVSFSysUtilError
   kVSFSysUtilErrACCES,
   kVSFSysUtilErrNOENT
 };
-enum EVSFSysUtilError sysutil_get_error(void);
-
 /* Signal handling utility functions */
 enum EVSFSysUtilSignal
 {
@@ -49,6 +47,7 @@ typedef void (*sighandle_t)(void*);
 typedef void (*async_sighandle_t)(int);
 typedef void (*context_io_t)(int, int, void*);
 
+enum EVSFSysUtilError sysutil_get_error(void);
 int sysutil_retval_is_error(int retval);
 void sysutil_install_null_sighandler(const enum EVSFSysUtilSignal sig);
 void sysutil_install_sighandler(const enum EVSFSysUtilSignal,

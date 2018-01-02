@@ -2,8 +2,6 @@
 #define STR_H_INCLUDED
 
 #include "filesize.h"
-#include "sysutil.h"
-
 
 struct mystr
 {

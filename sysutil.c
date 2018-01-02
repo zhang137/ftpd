@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <dirent.h>
 #include <sys/stat.h>
 #include <sys/signal.h>
 #include <string.h>
@@ -68,49 +69,78 @@ void sysutil_clear_alarm(void)
 /* Directory related things */
 char* sysutil_getcwd(char* p_dest, const unsigned int buf_size)
 {
+    char *p_retval;
+    if(buf_size == 0)
+        return p_dest;
+    p_retval = getcwd(p_dest,buf_size);
+    p_retval[buf_size] = '\0';
+    return p_retval;
 }
 int sysutil_mkdir(const char* p_dirname, const unsigned int mode)
 {
+    return mkdir(p_dirname,mode);
 }
 int sysutil_rmdir(const char* p_dirname)
 {
+    return rmdir(p_dirname);
 }
 int sysutil_chdir(const char* p_dirname)
 {
+    return chdir(p_dirname);
 }
 int sysutil_rename(const char* p_from, const char* p_to)
 {
+    return rename(p_from,p_to);
 }
 
 struct sysutil_dir* sysutil_opendir(const char* p_dirname)
 {
+
+    return (struct sysutil_dir*)opendir(p_dirname);
 }
+
 void sysutil_closedir(struct sysutil_dir* p_dir)
 {
+    struct sysutil_dir* pdir = p_dir;
+    int ret = closedir(p_dir);
+    if(ret < 0)
+        die("closedir");
 }
 const char* sysutil_next_dirent(struct sysutil_dir* p_dir)
 {
-
+    return readdir(p_dir);
 }
 
 int sysutil_open_file(const char* p_filename,
                           const enum EVSFSysUtilOpenMode mode)
 {
-
+    int fd;
+    if(mode & kVSFSysUtilOpenReadOnly) {
+        fd = open(p_filename,O_NONBLOCK|O_RDONLY);
+    }
+    else if(mode & kVSFSysUtilOpenWriteOnly)
+    {
+        fd = open(p_filename,O_NONBLOCK|O_WRONLY);
+    }else
+        open(p_filename,O_NONBLOCK|O_RDWR);
+    }
+    return fd;
 }
 /* Fails if file already exists */
 int sysutil_create_file_exclusive(const char* p_filename)
 {
-
+    return open(p_filename,O_CREAT|O_EXCL|O_APPEND|O_WRONLY,0666);
 }
 /* Creates file or appends if already exists */
 int sysutil_create_or_open_file_append(const char* p_filename,
                                            unsigned int mode)
 {
+    return open(p_filename,O_CREAT|O_APPEND|O_WRONLY|O_NONBLOCK,mode);
 }
 /* Creates or appends */
 int sysutil_create_or_open_file(const char* p_filename, unsigned int mode)
 {
+    return open(p_filename,O_CREAT|O_RDWR|O_NONBLOCK,mode);
 }
 void sysutil_dupfd2(int old_fd, int new_fd)
 {
@@ -213,13 +243,16 @@ int sysutil_statbuf_get_gid(const struct sysutil_statbuf* p_stat)
 int sysutil_statbuf_is_readable_other(
   const struct sysutil_statbuf* p_stat)
 {
+
 }
 const char* sysutil_statbuf_get_sortkey_mtime(
   const struct sysutil_statbuf* p_stat)
 {
+
 }
 int sysutil_chmod(const char* p_filename, unsigned int mode)
 {
+
 }
 void sysutil_fchown(const int fd, const int uid, const int gid)
 {
@@ -282,7 +315,7 @@ void* sysutil_realloc(void* p_ptr, unsigned int size)
 }
 void sysutil_free(void* p_ptr)
 {
-    free(p_pstr);
+    free(p_ptr);
 }
 
 /* Process creation/exit/process handling */

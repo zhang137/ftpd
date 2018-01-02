@@ -11,8 +11,6 @@ void str_list_free(struct mystr_list* p_list)
 void str_list_add(struct mystr_list* p_list, const struct mystr* p_str)
 {
 
-    struct mystr* pTemp;
-
     if(p_list->list_len == p_list->alloc_len)
     {
         if(p_list->alloc_len == 0)
@@ -28,7 +26,7 @@ void str_list_add(struct mystr_list* p_list, const struct mystr* p_str)
         }
     }
 
-    str_strcmp(p_list->pnodes[p_list->list_len],p_str);
+    str_strcmp(&(p_list->pnodes[p_list->list_len]),p_str);
     p_list->list_len += 1;
 
 }

@@ -4,7 +4,6 @@
 #include "filesize.h"
 #include "sysutil.h"
 #include "strlist.h"
-#include "str.h"
 
 struct _session
 {
