@@ -35,3 +35,74 @@
 	<stdlib.h>
 	"strlist.h"
 
+1515380100 source:/home/usr/projects/ftp/ftpd/ftpcmd.c
+	"ftpcmd.h"
+
+1515380100 /home/usr/projects/ftp/ftpd/ftpcmd.h
+
+1515380100 source:/home/usr/projects/ftp/ftpd/main.c
+	<stdio.h>
+	<stdlib.h>
+	"session.h"
+
+1515380100 /home/usr/projects/ftp/ftpd/session.h
+	"filesize.h"
+	"sysutil.h"
+	"strlist.h"
+
+1515380100 /home/usr/projects/ftp/ftpd/filesize.h
+
+1515396749 /home/usr/projects/ftp/ftpd/sysutil.h
+	<sys/stat.h>
+	<dirent.h>
+	<grp.h>
+	<pwd.h>
+	<netinet/in.h>
+	"filesize.h"
+
+1515380100 /home/usr/projects/ftp/ftpd/strlist.h
+	<netinet/in.h>
+	"str.h"
+
+1515380100 /home/usr/projects/ftp/ftpd/str.h
+	"filesize.h"
+
+1515396671 source:/home/usr/projects/ftp/ftpd/str.c
+	"str.h"
+	"sysutil.h"
+
+1515380100 source:/home/usr/projects/ftp/ftpd/strlist.c
+	<stdlib.h>
+	"strlist.h"
+
+1515390082 source:/home/usr/projects/ftp/ftpd/ls.c
+	<stdio.h>
+	<stdlib.h>
+	<sys/types.h>
+	<sys/stat.h>
+	<string.h>
+	<dirent.h>
+	<fcntl.h>
+	<time.h>
+	<grp.h>
+	<pwd.h>
+
+1515397199 source:/home/usr/projects/ftp/ftpd/sysutil.c
+	<stdio.h>
+	<stdlib.h>
+	<fcntl.h>
+	<unistd.h>
+	<netdb.h>
+	<sys/types.h>
+	<arpa/inet.h>
+	<sys/socket.h>
+	<sys/wait.h>
+	<dirent.h>
+	<sys/stat.h>
+	<sys/signal.h>
+	<string.h>
+	<limits.h>
+	<ctype.h>
+	<errno.h>
+	"sysutil.h"
+

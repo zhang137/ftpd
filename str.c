@@ -197,6 +197,7 @@ filesize_t str_a_to_filesize_t(const struct mystr* p_str)
 }
 unsigned int str_octal_to_uint(const struct mystr* p_str)
 {
+
 }
 
 int str_getline(const struct mystr* p_str, struct mystr* p_line_str,
