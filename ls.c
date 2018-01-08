@@ -1,17 +1,31 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <dirent.h>
 #include <string.h>
+#include <dirent.h>
 #include <fcntl.h>
 #include <time.h>
 #include <grp.h>
 #include <pwd.h>
 
+#define MAX(x,y) ((x) < (y) ? (y) : (x))
 
-void util_ls(const char *p_ptrPath)
+int max_align(int align,int to_align)
+{
+    int itmp = to_align;
+    int count = 0;
+    while(itmp > 0)
+    {
+        itmp /= 10;
+        count++;
+    }
+
+    return MAX(count,align);
+}
+
+
+void util_ls(const char *ptrPath)
 {
     DIR *Dir;
     struct stat statbuf;
@@ -19,19 +33,21 @@ void util_ls(const char *p_ptrPath)
     struct passwd *pwd;
     struct group  *grp;
     char *entries_permission;
-    char *dir_entries[20];
-    int entry_size,total_size = 0,i = 1,j;
+    //char *dir_entries[50];
+    int entry_size,j = 0;
+    u_int64_t total_size = 0;
+    int lalign = 0,falign = 0;
 
-    entries_permission = (char *)malloc(sizeof(char)*11);
-    for(j = 0; j < 20; j++){
-        dir_entries[j] = (char *)malloc(sizeof(char) * 100);
-        memset(dir_entries[j],0,100);
-    }
-    if(!p_ptrPath)
+    entries_permission = (char *)malloc(sizeof(char) * 11);
+    if(!ptrPath || access(ptrPath,F_OK))
         return;
 
-    chdir(p_ptrPath);
-    Dir = opendir(p_ptrPath);
+    chdir(ptrPath);
+
+    stat(ptrPath,&statbuf);
+    total_size += statbuf.st_size;
+
+    Dir = opendir(ptrPath);
     if(!Dir)
     {
         perror("opendir");
@@ -40,7 +56,19 @@ void util_ls(const char *p_ptrPath)
 
     while(tmp = readdir(Dir))
     {
-        if(!strcmp(tmp->d_name,".") || !strcmp(tmp->d_name,".."))
+        stat(tmp->d_name,&statbuf);
+        total_size += statbuf.st_size;
+        falign = max_align(falign,statbuf.st_size);
+        lalign = max_align(lalign,statbuf.st_nlink);
+    }
+
+    rewinddir(Dir);
+    fprintf(stdout,"total  %llu\n",total_size/1024);
+    while(tmp = readdir(Dir))
+    {
+
+        if(!strcmp(tmp->d_name,".") || !strcmp(tmp->d_name,"..")
+           || tmp->d_name[0] == '.')
            continue;
         memset(entries_permission,0,11);
         if(!stat(tmp->d_name,&statbuf))
@@ -84,21 +112,11 @@ void util_ls(const char *p_ptrPath)
 
             char *ptr_time = ctime(&statbuf.st_mtim);
             ptr_time[strlen(ptr_time) - 1] = '\0';
-            total_size += statbuf.st_size;
-            sprintf(dir_entries[i],"%s %lu  %s %s %.2lfkb %s  %s\n",entries_permission,statbuf.st_nlink,
-                    pwd->pw_name,grp->gr_name,(float)statbuf.st_size / 1024,ptr_time,tmp->d_name);
-            i++;
+            fprintf(stdout,"%s %*d %s  %s  %*d  %s  %s\n",entries_permission,lalign,statbuf.st_nlink,
+                    pwd->pw_name,grp->gr_name,falign,statbuf.st_size ,ptr_time,tmp->d_name);
         }
 
     }
-    sprintf(dir_entries[0],"total  %d\n",total_size);
-
-    for(j = 0; j < i; j++)
-        printf("%s",dir_entries[j]);
-
-    for(j = 0; j < 20; j++)
-        free(dir_entries[j]);
     closedir(Dir);
     free(entries_permission);
 }
-
