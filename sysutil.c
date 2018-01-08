@@ -6,10 +6,12 @@
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <sys/wait.h>
-#include <dirent.h>
-#include <sys/stat.h>
 #include <sys/signal.h>
+#include <netin/un.h>
+#include <signal.h>
+#include <time.h>
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>
@@ -158,7 +160,7 @@ int sysutil_close_failok(int fd)
 
 int sysutil_unlink(const char* p_dead)
 {
-    return 0;
+    return unlink(p_dead);
 }
 
 int sysutil_write_access(const char* p_filename)
@@ -174,7 +176,11 @@ void sysutil_ftruncate(int fd)
 /* Reading and writing */
 void sysutil_lseek_to(const int fd, filesize_t seek_pos)
 {
+    int res;
+    if((res = lseek(fd,SEEK_SET,seek_pos))< 0)
+    {
 
+    }
 }
 void sysutil_lseek_end(const int fd)
 {
@@ -186,75 +192,134 @@ void sysutil_lseek_end(const int fd)
 
 filesize_t sysutil_get_file_offset(const int file_fd)
 {
-
-    return 0;
+    return lseek(file_fd,SEEK_CUR,0);
 }
 int sysutil_read(const int fd, void* p_buf, const unsigned int size)
 {
     ssize_t nread;
     nread = read(fd,p_buf,size);
-    if(nread < 0)
+    if(nread <= 0)
     {
         if(errno == EINTR)
             return 0;
-    }
-    if(nread == 0)
         return -1;
+    }
     return nread;
 }
 int sysutil_write(const int fd, const void* p_buf,const unsigned int size)
 {
+    ssize_t nwrite;
+    nwrite = write(fd,p_buf,size);
+    if(nwrite <= 0)
+    {
+        if(errno == EINTR)
+            return 0;
+        return -1;
+    }
 
-    return 0;
+    return nwrite;
 }
 /* Reading and writing, with handling of interrupted system calls and partial
  * reads/writes. Slightly more usable than the standard UNIX API!
  */
 int sysutil_read_loop(const int fd, void* p_buf, unsigned int size)
 {
+    int ntotal = size;
+    int nread = 0,ntmp;
+    while(nread < size)
+    {
+        ntmp = sysutil_read(fd,p_buf+nread,ntotal);
+        if(ntmp == 0) {
+            continue;
+        }
+        if(ntmp < 0) {
+            return -1;//die("read");
+        }
+        nread += ntmp;
+        ntotal -= ntmp;
+    }
+
     return 0;
 }
 int sysutil_write_loop(const int fd, const void* p_buf, unsigned int size)
 {
+    int ntotal = size;
+    int nwrite = 0,ntmp;
+    while(nwrite < size)
+    {
+        ntmp = sysutil_write(fd,p_buf+nwrite,ntotal);
+        if(ntmp == 0) {
+            continue;
+        }
+        if(ntmp < 0) {
+            return -1;//die("read");
+        }
+        nread += ntmp;
+        ntotal -= ntmp;
+    }
     return 0;
 }
 
 
 int sysutil_stat(const char* p_name, struct sysutil_statbuf** p_ptr)
 {
+    struct sysutil_statbuf statbuf;
+    if(stat(p_name,&statbuf) < 0)
+    {
+        return -1;
+    }
+    *p_ptr = statbuf;
     return 0;
 }
 int sysutil_lstat(const char* p_name, struct sysutil_statbuf** p_ptr)
 {
+    struct sysutil_statbuf statbuf;
+    if(lstat(p_name,&statbuf) < 0)
+    {
+
+    }
+    *p_ptr = statbuf;
     return 0;
 }
 void sysutil_fstat(int fd, struct sysutil_statbuf** p_ptr)
 {
+    int fd;
+    struct sysutil_statbuf statbuf;
+    if((fd = fstat(p_name,&statbuf)) < 0)
+    {
+
+    }
+    *p_ptr = statbuf;
+    sysutil_close(fd);
+    return 0;
 }
 void sysutil_dir_stat(const struct sysutil_dir* p_dir,
                           struct sysutil_statbuf** p_ptr)
 {
+    struct stat statv;
+
 }
 int sysutil_statbuf_is_regfile(const struct sysutil_statbuf* p_stat)
 {
-    return 0;
+    return S_IFREG(p_stat->st_mode);
 }
 int sysutil_statbuf_is_symlink(const struct sysutil_statbuf* p_stat)
 {
-    return 0;
+    struct stat statbuf;
+    return S_ISLNK(p_stat->st_mode);
 }
 int sysutil_statbuf_is_socket(const struct sysutil_statbuf* p_stat)
 {
-    return 0;
+    return S_IFSOCK(p_stat->st_mode);
 }
 int sysutil_statbuf_is_dir(const struct sysutil_statbuf* p_stat)
 {
-    return 0;
+    return return S_IFDIR(p_stat->st_mode);;
 }
 filesize_t sysutil_statbuf_get_size(
   const struct sysutil_statbuf* p_stat)
 {
-    return 0;
+    return p_stat->st_size;
 }
 const char* sysutil_statbuf_get_perms(
   const struct sysutil_statbuf* p_stat)
@@ -296,13 +361,15 @@ const char* sysutil_statbuf_get_sortkey_mtime(
 }
 int sysutil_chmod(const char* p_filename, unsigned int mode)
 {
-    return 0;
+    return chmod(p_filename,mode);
 }
 void sysutil_fchown(const int fd, const int uid, const int gid)
 {
+    fchown(fd,uid,gid);
 }
 void sysutil_fchmod(const int fd, unsigned int mode)
 {
+    sysutil_chmod(fd,mode);
 }
 int sysutil_readlink(const char* p_filename, char* p_dest,
                          unsigned int bufsiz)
@@ -368,27 +435,34 @@ void sysutil_free(void* p_ptr)
 /* Process creation/exit/process handling */
 unsigned int sysutil_getpid(void)
 {
-    return 0;
+    return getpid();
 }
 void sysutil_post_fork(void)
 {
+
 }
 int sysutil_fork(void)
 {
+    pid_t pid;
+    pid = fork();
     return 0;
 }
 int sysutil_fork_failok(void)
 {
+
     return 0;
 }
 void sysutil_exit(int exit_code)
 {
-
+    _exit(exit_code);
 }
 
 struct sysutil_wait_retval sysutil_wait(void)
 {
     struct sysutil_wait_retval ret;
+
+    wait()
+
     return ret;
 }
 int sysutil_wait_reap_one(void)
@@ -428,15 +502,18 @@ char* sysutil_strdup(const char* p_str)
 }
 void sysutil_memclr(void* p_dest, unsigned int size)
 {
+    memset(p_dest,0,size);
 }
 void sysutil_memcpy(void* p_dest, const void* p_src,
                         const unsigned int size)
 {
-
+    if(p_dest == p_src)
+        return;
+    memcpy(p_dest,p_src,size);
 }
 void sysutil_strcpy(char* p_dest, const char* p_src, unsigned int maxsize)
 {
-
+    sysutil_memcpy(p_dest,p_src,maxsize);
 }
 
 int sysutil_memcmp(const void* p_src1, const void* p_src2,
@@ -452,23 +529,24 @@ int sysutil_strcmp(const char* p_src1, const char* p_src2)
 }
 int sysutil_atoi(const char* p_str)
 {
-    return 0;
+    return atoi(p_str);
 }
 filesize_t sysutil_a_to_filesize_t(const char* p_str)
 {
-    return 0;
+    return atoll(p_str);
 }
 const char* sysutil_ulong_to_str(unsigned long the_ulong)
 {
-    return 0;
+    itoa()
+    return ultoa(the_long);
 }
 const char* sysutil_filesize_t_to_str(filesize_t the_filesize)
 {
-    return 0;
+    return atoul(the_filesize);
 }
 const char* sysutil_double_to_str(double the_double)
 {
-    return 0;
+    return atof(the_double);
 }
 const char* sysutil_uint_to_octal(unsigned int the_uint)
 {
@@ -480,23 +558,23 @@ unsigned int sysutil_octal_to_uint(const char* p_str)
 }
 int sysutil_toupper(int the_char)
 {
-    return 0;
+    return toupper(th_char);
 }
 int sysutil_isspace(int the_char)
 {
-    return 0;
+    return isspace(th_char);
 }
 int sysutil_isprint(int the_char)
 {
-    return 0;
+    return isprint(the_char);
 }
 int sysutil_isalnum(int the_char)
 {
-    return 0;
+    return isalnum(the_char);
 }
 int sysutil_isdigit(int the_char)
 {
-    return 0;
+    return isdigit(the_char);
 }
 
 void sysutil_sockaddr_alloc(struct sysutil_sockaddr** p_sockptr)
