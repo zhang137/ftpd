@@ -1,8 +1,19 @@
 #ifndef SYSUTIL_H_INCLUDED
 #define SYSUTIL_H_INCLUDED
 
+#include <sys/stat.h>
+#include <dirent.h>
+#include <grp.h>
+#include <pwd.h>
 #include <netinet/in.h>
 #include "filesize.h"
+
+#define group sysutil_group
+#define passwd sysutil_user
+#define DIR sysutil_dir
+#define stat sysutil_statbuf
+//#define  sysutil_wait_retval
+//typedef struct
 
 struct sysutil_sockaddr
 {
@@ -13,8 +24,6 @@ struct sysutil_sockaddr
     struct sockaddr_in6 u_sockaddr_in6;
   } u;
 };
-
-
 
 enum EVSFSysUtilError
 {
@@ -48,7 +57,7 @@ typedef void (*async_sighandle_t)(int);
 typedef void (*context_io_t)(int, int, void*);
 
 enum EVSFSysUtilError sysutil_get_error(void);
-int sysutil_retval_is_error(int retval);
+int  sysutil_retval_is_error(int retval);
 void sysutil_install_null_sighandler(const enum EVSFSysUtilSignal sig);
 void sysutil_install_sighandler(const enum EVSFSysUtilSignal,
                                     async_sighandle_t handler,
@@ -77,7 +86,7 @@ int sysutil_rename(const char* p_from, const char* p_to);
 
 struct sysutil_dir;
 struct sysutil_dir* sysutil_opendir(const char* p_dirname);
-void sysutil_closedir(struct sysutil_dir* p_dir);
+void   sysutil_closedir(struct sysutil_dir* p_dir);
 const char* sysutil_next_dirent(struct sysutil_dir* p_dir);
 
 /* File create/open/close etc. */
@@ -178,11 +187,13 @@ void sysutil_post_fork(void);
 int sysutil_fork(void);
 int sysutil_fork_failok(void);
 void sysutil_exit(int exit_code);
+
 struct sysutil_wait_retval
 {
-  int PRIVATE_HANDS_OFF_syscall_retval;
-  int PRIVATE_HANDS_OFF_exit_status;
+  int syscall_retval;
+  int exit_status;
 };
+
 struct sysutil_wait_retval sysutil_wait(void);
 int sysutil_wait_reap_one(void);
 int sysutil_wait_get_retval(
@@ -354,8 +365,8 @@ int sysutil_setmodtime(const char* p_file, long the_time, int is_localtime);
 
 /* Limits */
 void sysutil_set_address_space_limit(unsigned long bytes);
-void sysutil_set_no_fds(void);
-void sysutil_set_no_procs(void);
+void sysutil_set_no_fds();
+void sysutil_set_no_procs();
 
 
 #endif // SYSUTIL_H_INCLUDED
