@@ -9,7 +9,7 @@
 #include <sys/un.h>
 #include <sys/wait.h>
 #include <sys/signal.h>
-#include <netin/un.h>
+#include <sys/un.h>
 #include <signal.h>
 #include <time.h>
 #include <string.h>
@@ -147,6 +147,7 @@ int sysutil_create_or_open_file(const char* p_filename, unsigned int mode)
 }
 void sysutil_dupfd2(int old_fd, int new_fd)
 {
+
 }
 void sysutil_close(int fd)
 {
@@ -165,7 +166,7 @@ int sysutil_unlink(const char* p_dead)
 
 int sysutil_write_access(const char* p_filename)
 {
-    return 0;
+    return access(p_filename,W_OK);
 }
 
 void sysutil_ftruncate(int fd)
@@ -252,9 +253,9 @@ int sysutil_write_loop(const int fd, const void* p_buf, unsigned int size)
             continue;
         }
         if(ntmp < 0) {
-            return -1;//die("read");
+            return -1;
         }
-        nread += ntmp;
+        nwrite += ntmp;
         ntotal -= ntmp;
     }
     return 0;
@@ -268,7 +269,7 @@ int sysutil_stat(const char* p_name, struct sysutil_statbuf** p_ptr)
     {
         return -1;
     }
-    *p_ptr = statbuf;
+    *p_ptr = &statbuf;
     return 0;
 }
 int sysutil_lstat(const char* p_name, struct sysutil_statbuf** p_ptr)
@@ -278,19 +279,17 @@ int sysutil_lstat(const char* p_name, struct sysutil_statbuf** p_ptr)
     {
 
     }
-    *p_ptr = statbuf;
+    *p_ptr = &statbuf;
     return 0;
 }
 void sysutil_fstat(int fd, struct sysutil_statbuf** p_ptr)
 {
-    int fd;
     struct sysutil_statbuf statbuf;
-    if((fd = fstat(p_name,&statbuf)) < 0)
+    if(fstat(fd,&statbuf) < 0)
     {
 
     }
-    *p_ptr = statbuf;
-    sysutil_close(fd);
+    *p_ptr = &statbuf;
     return 0;
 }
 void sysutil_dir_stat(const struct sysutil_dir* p_dir,
@@ -301,20 +300,19 @@ void sysutil_dir_stat(const struct sysutil_dir* p_dir,
 }
 int sysutil_statbuf_is_regfile(const struct sysutil_statbuf* p_stat)
 {
-    return S_IFREG(p_stat->st_mode);
+    return S_ISREG(p_stat->st_mode);
 }
 int sysutil_statbuf_is_symlink(const struct sysutil_statbuf* p_stat)
 {
-    struct stat statbuf;
     return S_ISLNK(p_stat->st_mode);
 }
 int sysutil_statbuf_is_socket(const struct sysutil_statbuf* p_stat)
 {
-    return S_IFSOCK(p_stat->st_mode);
+    return S_ISSOCK(p_stat->st_mode);
 }
 int sysutil_statbuf_is_dir(const struct sysutil_statbuf* p_stat)
 {
-    return return S_IFDIR(p_stat->st_mode);;
+    return S_ISDIR(p_stat->st_mode);
 }
 filesize_t sysutil_statbuf_get_size(
   const struct sysutil_statbuf* p_stat)
@@ -324,39 +322,42 @@ filesize_t sysutil_statbuf_get_size(
 const char* sysutil_statbuf_get_perms(
   const struct sysutil_statbuf* p_stat)
 {
+    //p_stat->
     return 0;
 }
 const char* sysutil_statbuf_get_date(
   const struct sysutil_statbuf* p_stat, int use_localtime, long curr_time)
 {
+
     return 0;
 }
 const char* sysutil_statbuf_get_numeric_date(
   const struct sysutil_statbuf* p_stat, int use_localtime)
 {
+
     return 0;
 }
-unsigned int sysutil_statbuf_get_links(
-  const struct sysutil_statbuf* p_stat)
+unsigned int sysutil_statbuf_get_links( const struct sysutil_statbuf* p_stat )
 {
-    return 0;
+    return p_stat->st_nlink;
 }
 int sysutil_statbuf_get_uid(const struct sysutil_statbuf* p_stat)
 {
-    return 0;
+    return p_stat->st_uid;
 }
 int sysutil_statbuf_get_gid(const struct sysutil_statbuf* p_stat)
 {
-    return 0;
+    return p_stat->st_gid;
 }
 int sysutil_statbuf_is_readable_other(
   const struct sysutil_statbuf* p_stat)
 {
-    return 0;
+    return __S_ISTYPE(p_stat->st_mode,S_IROTH);
 }
 const char* sysutil_statbuf_get_sortkey_mtime(
   const struct sysutil_statbuf* p_stat)
 {
+
     return 0;
 }
 int sysutil_chmod(const char* p_filename, unsigned int mode)
@@ -369,18 +370,27 @@ void sysutil_fchown(const int fd, const int uid, const int gid)
 }
 void sysutil_fchmod(const int fd, unsigned int mode)
 {
-    sysutil_chmod(fd,mode);
+    fchmod(fd,mode);
 }
 int sysutil_readlink(const char* p_filename, char* p_dest,
                          unsigned int bufsiz)
 {
-    return 0;
+    return readlink(p_filename,p_dest,bufsiz);
 }
 /* Get / unget various locks. Lock gets are blocking. Write locks are
  * exclusive read locks are shared.
  */
 int sysutil_lock_file_write(int fd)
 {
+    struct flock lock;
+    lock.l_pid = sysutil_getpid();
+    lock.l_start = 0;
+    lock.l_len = 0;
+    lock.l_type =
+    lock.l_whence = SEEK_SET;
+
+    if(fcntl(fd,F_SETLK,lock) < 0)
+        ;//die("fcntl");
     return 0;
 }
 int sysutil_lock_file_read(int fd)
@@ -445,6 +455,10 @@ int sysutil_fork(void)
 {
     pid_t pid;
     pid = fork();
+    if(pid > 0)
+    {
+        sysutil_exit();
+    }
     return 0;
 }
 int sysutil_fork_failok(void)
@@ -461,17 +475,26 @@ struct sysutil_wait_retval sysutil_wait(void)
 {
     struct sysutil_wait_retval ret;
 
-    wait()
+    //ret.
+
 
     return ret;
 }
 int sysutil_wait_reap_one(void)
 {
-    return 0;
+    int status;
+    pid_t pid;
+    pid = wait(&status);
+    if(pid < 0)
+    {
+
+    }
+    return pid;
 }
 int sysutil_wait_get_retval(
   const struct sysutil_wait_retval* p_waitret)
 {
+
     return 0;
 }
 int sysutil_wait_exited_normally(
@@ -537,16 +560,16 @@ filesize_t sysutil_a_to_filesize_t(const char* p_str)
 }
 const char* sysutil_ulong_to_str(unsigned long the_ulong)
 {
-    itoa()
-    return ultoa(the_long);
+    //itoa()
+    return 0;//ultoa(the_long);
 }
 const char* sysutil_filesize_t_to_str(filesize_t the_filesize)
 {
-    return atoul(the_filesize);
+    return 0;//atoul(the_filesize);
 }
 const char* sysutil_double_to_str(double the_double)
 {
-    return atof(the_double);
+    return 0;//atof(the_double);
 }
 const char* sysutil_uint_to_octal(unsigned int the_uint)
 {
@@ -558,11 +581,11 @@ unsigned int sysutil_octal_to_uint(const char* p_str)
 }
 int sysutil_toupper(int the_char)
 {
-    return toupper(th_char);
+    return toupper(the_char);
 }
 int sysutil_isspace(int the_char)
 {
-    return isspace(th_char);
+    return isspace(the_char);
 }
 int sysutil_isprint(int the_char)
 {
@@ -579,44 +602,67 @@ int sysutil_isdigit(int the_char)
 
 void sysutil_sockaddr_alloc(struct sysutil_sockaddr** p_sockptr)
 {
+
+    struct sysutil_sockaddr *tmp_addr;
+    struct sockaddr saddr;
+    tmp_addr = (struct sysutil_sockaddr *)sysutil_malloc(sizeof(struct sysutil_sockaddr));
+    sysutil_sockaddr_clear(&tmp_addr);
+    tmp_addr.u.u_sockaddr = saddr;
+    *p_sockptr = tmp_addr;
 }
 void sysutil_sockaddr_clear(struct sysutil_sockaddr** p_sockptr)
 {
+    sysutil_memclr(*p_sockptr,sizeof(*p_sockptr));
 }
 void sysutil_sockaddr_alloc_ipv4(struct sysutil_sockaddr** p_sockptr)
 {
+    struct sysutil_sockaddr *tmp_addr;
+    struct sockaddr_in saddr_in;
+    saddr_in.sin_family = AF_INET;
+    tmp_addr = (struct sysutil_sockaddr *)sysutil_malloc(sizeof(struct sysutil_sockaddr));
+    sysutil_sockaddr_clear(&tmp_addr);
+    tmp_addr.u.u_sockaddr_in = saddr_in;
+    *p_sockptr = tmp_addr;
+
 }
 void sysutil_sockaddr_alloc_ipv6(struct sysutil_sockaddr** p_sockptr)
 {
+    struct sysutil_sockaddr *tmp_addr;
+    struct sockaddr_in6 saddr_in6;
+    saddr_in6.sin6_family = AF_INET6;
+    tmp_addr = (struct sysutil_sockaddr *)sysutil_malloc(sizeof(struct sysutil_sockaddr));
+    sysutil_sockaddr_clear(&tmp_addr);
+    tmp_addr.u.u_sockaddr_in6 = saddr_in6;
+    *p_sockptr = tmp_addr;
 }
-void sysutil_sockaddr_clone(
-  struct sysutil_sockaddr** p_sockptr,
-  const struct sysutil_sockaddr* p_src)
+void sysutil_sockaddr_clone (struct sysutil_sockaddr** p_sockptr,
+                                    const struct sysutil_sockaddr* p_src)
 {
+    sysutil_memcpy(*p_sockptr,p_src,sizeof(struct sysutil_sockaddr));
 }
 int sysutil_sockaddr_addr_equal(const struct sysutil_sockaddr* p1,
                                     const struct sysutil_sockaddr* p2)
 {
-    return 0;
+    return sysutil_memcmp(p1,p2,sizeof(struct sysutil_sockaddr));
 }
 int sysutil_sockaddr_is_ipv6(
   const struct sysutil_sockaddr* p_sockaddr)
 {
-    return 0;
+    return p_sockaddr.u.u_sockaddr_in6.sin6_family == AF_INET6;
 }
 void sysutil_sockaddr_set_ipv4addr(struct sysutil_sockaddr* p_sockptr,
                                        const unsigned char* p_raw)
 {
-
+    sysutil_inet_aton(p_raw,p_sockptr);
 }
 void sysutil_sockaddr_set_ipv6addr(struct sysutil_sockaddr* p_sockptr,
                                        const unsigned char* p_raw)
 {
-
+    sysutil_inet_aton(p_raw,p_sockptr);
 }
 void sysutil_sockaddr_set_any(struct sysutil_sockaddr* p_sockaddr)
 {
-
+    sysutil_inet_aton(INADDR_ANY,p_sockaddr);
 }
 unsigned short sysutil_sockaddr_get_port(
     const struct sysutil_sockaddr* p_sockptr)
@@ -626,9 +672,25 @@ unsigned short sysutil_sockaddr_get_port(
 void sysutil_sockaddr_set_port(struct sysutil_sockaddr* p_sockptr,
                                    unsigned short the_port)
 {
+    if(p_sockptr->u.u_sockaddr_in.sin_family == AF_INET)
+        p_sockptr->u.u_sockaddr_in.sin_port = htons(the_port);
+    else if(p_sockptr->u.u_sockaddr_in6.sin6_family == AF_INET6)
+        p_sockptr->u.u_sockaddr_in6.sin6_port = htons(the_port);
 }
 int sysutil_is_port_reserved(unsigned short port)
 {
+    struct sysutil_sockaddr saddr;
+    struct sockaddr_in addr;
+    int fd;
+    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    addr.sin_port = htons(port);
+    addr.sin_family = AF_INET;
+    saddr.u.u_sockaddr_in = addr;
+    fd = sysutil_get_ipv4_sock(SOCK_STREAM,0);
+    if(fd < 0)
+        return -1;
+    if(sysutil_bind(fd,&saddr) < 0)
+        return 1;
     return 0;
 }
 int sysutil_get_ipsock(const struct sysutil_sockaddr* p_sockaddr)
@@ -656,12 +718,13 @@ const void* sysutil_sockaddr_ipv4_v6(
 }
 int sysutil_get_ipv4_sock(void)
 {
-    return 0;
+    return socket(AF_INET,STREAM,IPPROTO_TCP);
 }
 int sysutil_get_ipv6_sock(void)
 {
-    return 0;
+    return socket(AF_INET6,STREAM,IPPROTO_TCP);
 }
+
 struct sysutil_socketpair_retval
   sysutil_unix_stream_socketpair(void)
 {
@@ -670,17 +733,49 @@ struct sysutil_socketpair_retval
 }
 int sysutil_bind(int fd, const struct sysutil_sockaddr* p_sockptr)
 {
+    if(p_sockptr->u.u_sockaddr_in.sin_family == AF_INET)
+    {
+        if(bind(fd,(struct sockaddr *)&p_sockptr.u.u_sockaddr_in,sizeof(struct sockaddr_in)) < 0)
+        {
+            return -1;
+        }
+    }
+    else if(p_sockptr->u.u_sockaddr_in6.sin6_family == AF_INET6)
+    {
+        if(bind(fd,(struct sockaddr *)&p_sockptr.u.u_sockaddr_in,sizeof(struct sockaddr_in6)) < 0)
+        {
+            return -1;
+        }
+    }
     return 0;
 }
 int sysutil_listen(int fd, const unsigned int backlog)
 {
+    if(listen(fd,backlog) < 0)
+        return -1;
     return 0;
 }
 void sysutil_getsockname(int fd, struct sysutil_sockaddr** p_sockptr)
 {
+    if(p_sockptr->u.u_sockaddr_in.sin_family == AF_INET)
+    {
+
+    }
+    else if(p_sockptr->u.u_sockaddr_in6.sin6_family == AF_INET6)
+    {
+
+    }
 }
 void sysutil_getpeername(int fd, struct sysutil_sockaddr** p_sockptr)
 {
+    if(p_sockptr->u.u_sockaddr_in.sin_family == AF_INET)
+    {
+
+    }
+    else if(p_sockptr->u.u_sockaddr_in6.sin6_family == AF_INET6)
+    {
+
+    }
 }
 int sysutil_accept_timeout(int fd, struct sysutil_sockaddr* p_sockaddr,
                                unsigned int wait_seconds)
@@ -735,25 +830,36 @@ void sysutil_shutdown_failok(int fd)
 /* And this does SHUT_RD */
 void sysutil_shutdown_read_failok(int fd)
 {
+
 }
 int sysutil_recv_peek(const int fd, void* p_buf, unsigned int len)
 {
     return 0;
 }
 
-const char* sysutil_inet_ntop(
-  const struct sysutil_sockaddr* p_sockptr)
+const char* sysutil_inet_ntop( const struct sysutil_sockaddr* p_sockptr)
 {
-    return 0;
+    const char *ptr_addr;
+    if(p_sockptr->u.u_sockaddr_in.sin_family == AF_INET)
+    {
+        ptr_addr = (const char *)malloc(INET_ADDRSTRLEN*sizeof(char));
+        ptr_addr = inet_ntop(AF_INET,&(p_sockptr->u.u_sockaddr_in.sin_addr),ptr_addr,INET_ADDRSTRLEN);
+    } else if(p_sockptr->u.u_sockaddr_in6.sin6_family  == AF_INET6 )
+    {
+        ptr_addr = (const char *)malloc(INET6_ADDRSTRLEN*sizeof(char));
+        ptr_addr = inet_ntop(AF_INET6,&(p_sockptr->u.u_sockaddr_in6.sin6_addr),ptr_addr,INET6_ADDRSTRLEN);
+    }
+    return ptr_addr;
 }
 const char* sysutil_inet_ntoa(const void* p_raw_addr)
 {
-    return 0;
+    struct sockaddr_in *sock = (struct sockaddr_in *)p_raw_addr;
+    return inet_ntoa(sock->sin_addr);
 }
 int sysutil_inet_aton(
   const char* p_text, struct sysutil_sockaddr* p_addr)
 {
-    return 0;
+    return inet_aton(p_text,&p_sockptr->u.u_sockaddr_in.sin_family);
 }
 
 

@@ -8,10 +8,10 @@
 #include <netinet/in.h>
 #include "filesize.h"
 
-#define group sysutil_group
-#define passwd sysutil_user
-#define DIR sysutil_dir
-#define stat sysutil_statbuf
+#define sysutil_group group
+#define sysutil_user passwd
+#define sysutil_dir DIR
+#define sysutil_statbuf stat
 //#define  sysutil_wait_retval
 //typedef struct
 
@@ -136,10 +136,8 @@ int sysutil_statbuf_is_regfile(const struct sysutil_statbuf* p_stat);
 int sysutil_statbuf_is_symlink(const struct sysutil_statbuf* p_stat);
 int sysutil_statbuf_is_socket(const struct sysutil_statbuf* p_stat);
 int sysutil_statbuf_is_dir(const struct sysutil_statbuf* p_stat);
-filesize_t sysutil_statbuf_get_size(
-  const struct sysutil_statbuf* p_stat);
-const char* sysutil_statbuf_get_perms(
-  const struct sysutil_statbuf* p_stat);
+filesize_t sysutil_statbuf_get_size(const struct sysutil_statbuf* p_stat);
+const char* sysutil_statbuf_get_perms(const struct sysutil_statbuf* p_stat);
 const char* sysutil_statbuf_get_date(
   const struct sysutil_statbuf* p_stat, int use_localtime, long curr_time);
 const char* sysutil_statbuf_get_numeric_date(

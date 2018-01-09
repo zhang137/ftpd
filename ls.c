@@ -13,15 +13,15 @@
 
 int max_align(int align,int to_align)
 {
-    int itmp = to_align;
-    int count = 0;
-    while(itmp > 0)
+    int tmp = to_align;
+    int ncount = 0;
+    while(tmp > 0)
     {
-        itmp /= 10;
-        count++;
+        tmp /= 10;
+        ncount++;
     }
 
-    return MAX(count,align);
+    return MAX(ncount,align);
 }
 
 
@@ -36,7 +36,7 @@ void util_ls(const char *ptrPath)
     //char *dir_entries[50];
     int entry_size,j = 0;
     u_int64_t total_size = 0;
-    int lalign = 0,falign = 0;
+    int linknum_align = 0,filesize_align = 0;
 
     entries_permission = (char *)malloc(sizeof(char) * 11);
     if(!ptrPath || access(ptrPath,F_OK))
@@ -58,8 +58,8 @@ void util_ls(const char *ptrPath)
     {
         stat(tmp->d_name,&statbuf);
         total_size += statbuf.st_size;
-        falign = max_align(falign,statbuf.st_size);
-        lalign = max_align(lalign,statbuf.st_nlink);
+        filesize_align = max_align(falign,statbuf.st_size);
+        linknum_align = max_align(lalign,statbuf.st_nlink);
     }
 
     rewinddir(Dir);
@@ -112,8 +112,8 @@ void util_ls(const char *ptrPath)
 
             char *ptr_time = ctime(&statbuf.st_mtim);
             ptr_time[strlen(ptr_time) - 1] = '\0';
-            fprintf(stdout,"%s %*d %s  %s  %*d  %s  %s\n",entries_permission,lalign,statbuf.st_nlink,
-                    pwd->pw_name,grp->gr_name,falign,statbuf.st_size ,ptr_time,tmp->d_name);
+            fprintf(stdout,"%s %*d %s  %s  %*d  %s  %s\n",entries_permission,linknum_align,statbuf.st_nlink,
+                    pwd->pw_name,grp->gr_name,linknum_align,statbuf.st_size ,ptr_time,tmp->d_name);
         }
 
     }
