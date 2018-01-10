@@ -4,34 +4,38 @@
 
 1514800126 /home/zyy/ftp/ftp/ftpcmd.h
 
-1514803791 source:/home/zyy/ftp/ftp/main.c
+1514903986 source:/home/zyy/ftp/ftp/main.c
 	<stdio.h>
 	<stdlib.h>
 	"session.h"
 
-1514897841 /home/zyy/ftp/ftp/session.h
+1514904473 /home/zyy/ftp/ftp/session.h
 	"filesize.h"
 	"sysutil.h"
 	"strlist.h"
 
-1514898127 /home/zyy/ftp/ftp/sysutil.h
+1515599124 /home/zyy/ftp/ftp/sysutil.h
 	<netinet/in.h>
+	<sys/stat.h>
+	<dirent.h>
+	<pwd.h>
+	<grp.h>
 	"filesize.h"
 
 1514812287 /home/zyy/ftp/ftp/strlist.h
 	<netinet/in.h>
 	"str.h"
 
-1514897945 /home/zyy/ftp/ftp/str.h
+1514904473 /home/zyy/ftp/ftp/str.h
 	"filesize.h"
 
 1514806534 /home/zyy/ftp/ftp/filesize.h
 
-1514898095 source:/home/zyy/ftp/ftp/str.c
+1515409776 source:/home/zyy/ftp/ftp/str.c
 	"str.h"
 	"sysutil.h"
 
-1514897565 source:/home/zyy/ftp/ftp/strlist.c
+1515593619 source:/home/zyy/ftp/ftp/strlist.c
 	<stdlib.h>
 	"strlist.h"
 
@@ -105,4 +109,16 @@
 	<ctype.h>
 	<errno.h>
 	"sysutil.h"
+
+1515593619 source:/home/zyy/ftp/ftp/ls.c
+	<stdio.h>
+	<stdlib.h>
+	<sys/types.h>
+	<sys/stat.h>
+	<string.h>
+	<dirent.h>
+	<fcntl.h>
+	<time.h>
+	<grp.h>
+	<pwd.h>
 

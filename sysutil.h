@@ -317,7 +317,7 @@ const char* sysutil_group_getname(const struct sysutil_group* p_group);
 unsigned int sysutil_getpagesize(void);
 unsigned char sysutil_get_random_byte(void);
 unsigned int sysutil_get_umask(void);
-void sysutil_set_umask(unsigned int umask);
+void sysutil_set_umask(unsigned int mask);
 void sysutil_make_session_leader(void);
 void sysutil_reopen_standard_fds(void);
 void sysutil_tzset(void);

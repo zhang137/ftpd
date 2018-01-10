@@ -6,6 +6,8 @@
 #include <sys/signal.h>
 #include <sys/select.h>
 #include <netinet/tcp.h>
+#include <netinet/ip.h>
+#include <netinet/ip6.h>
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <sys/un.h>
@@ -830,20 +832,10 @@ int sysutil_accept_timeout(int fd, struct sysutil_sockaddr* p_sockaddr,
 {
     int clientfd,res;
     struct timeval tv;
-    gettimeofday(&tv,NULL);
-    clientfd = accept(fd,(struct sockaddr*)&p_sockaddr->u.u_sockaddr_in,sizeof(struct sockaddr));
-    if(clientfd < 0)
-    {
-       if (errno != EAGAIN )
-           return -1;
-    }else {
-        return clientfd;
-    }
-    tv.tv_sec = wait_seconds - tv.tv_sec;
+    tv.tv_sec = wait_seconds; //sec = 0 ?
     tv.tv_usec = 0;
-    struct fd_set rfdset;
-    struct fd_set wfdset;
-    struct fd_set efdset;
+    fd_set rfdset;
+    fd_set wfdset;
 
     FD_ZERO(&rfdset);
     FD_ZERO(&wfdset);
@@ -851,23 +843,27 @@ int sysutil_accept_timeout(int fd, struct sysutil_sockaddr* p_sockaddr,
     FD_SET(clientfd,&rfdset);
     FD_SET(clientfd,&wfdset);
 
-    res = select(clientfd+1,&rfdset,&wfdset,NULL,&tv);
+    res = select(fd+1,&rfdset,&wfdset,NULL,&tv);
     if(res > 0)
     {
-        if(FD_ISSET(clientfd,&rfdset) && ! FD_ISSET(clientfd,&wfdset))
-            return clientfd;
-        if(FD_ISSET(clientfd,&rfdset) && FD_ISSET(clientfd,&wfdset))
+        if(FD_ISSET(fd,&rfdset) && ! FD_ISSET(fd,&wfdset))
+        {
+            clientfd = accept(fd,(struct sockaddr*)&p_sockaddr->u.u_sockaddr_in,sizeof(struct sockaddr));
+            if(clientfd > 0)
+            {
+                return clientfd;
+            }
+        }
+        if(FD_ISSET(fd,&rfdset) && FD_ISSET(fd,&wfdset))
         {
             int error;
-            if(!setsockopt(clientfd,SOL_SOCKET,SO_ERROR,&error,sizeof(int)))
+            if(!setsockopt(fd,SOL_SOCKET,SO_ERROR,&error,sizeof(int)))
             {
-                saved_errno = errno;
+                saved_errno = error;
             }
         }
     }
 
-    FD_CLR(&rfdset);
-    FD_CLR(&wfdset);
     return -1;
 }
 int sysutil_connect_timeout(int fd,
@@ -887,33 +883,31 @@ int sysutil_connect_timeout(int fd,
     }
     tv.tv_sec = wait_seconds - tv.tv_sec;
     tv.tv_usec = 0;
-    struct fd_set rfdset;
-    struct fd_set wfdset;
-    struct fd_set efdset;
+    fd_set rfdset;
+    fd_set wfdset;
+
 
     FD_ZERO(&rfdset);
     FD_ZERO(&wfdset);
 
-    FD_SET(clientfd,&rfdset);
-    FD_SET(clientfd,&wfdset);
+    FD_SET(fd,&rfdset);
+    FD_SET(fd,&wfdset);
 
     res = select(fd+1,&rfdset,&wfdset,NULL,&tv);
     if(res > 0)
     {
-        if(FD_ISSET(fd,&rfdset) && ! FD_ISSET(fd,&wfdset))
+        if(FD_ISSET(fd,&wfdset) && ! FD_ISSET(fd,&rfdset))
             return 0;
         if(FD_ISSET(fd,&rfdset) && FD_ISSET(fd,&wfdset))
         {
             int error;
             if(!setsockopt(fd,SOL_SOCKET,SO_ERROR,&error,sizeof(int)))
             {
-                saved_errno = errno;
+                saved_errno = error;
             }
         }
     }
 
-    FD_CLR(&rfdset);
-    FD_CLR(&wfdset);
     return -1;
 }
 void sysutil_dns_resolve(struct sysutil_sockaddr** p_sockptr,
@@ -926,25 +920,25 @@ void sysutil_activate_keepalive(int fd)
 {
     int klive;
     if(setsockopt(fd,SOL_SOCKET,SO_KEEPALIVE,&klive,sizeof(int)) < 0)
-        ;//die("setsockopt");
+        ;//die("setsockopt KEEPALIVE");
 
 }
 void sysutil_set_iptos_throughput(int fd)
 {
-    int tos;
-    if(setsockopt(fd,SOL_IP,IP_TOS,&tos,sizeof(int)) < 0)
-        ;//die("setsockopt");
+    unsigned char tos  = IPTOS_THROUGHPUT;
+    if(setsockopt(fd,SOL_IP,IP_TOS,&tos,sizeof(unsigned char)) < 0)
+        ;//die("setsockopt IPTOS");
 }
 void sysutil_activate_reuseaddr(int fd)
 {
     int raddr;
     if(setsockopt(fd,SOL_SOCKET,SO_REUSEADDR,&raddr,sizeof(int)) < 0)
-        ;//die("setsockopt");
+        ;//die("setsockopt REUSEADDR");
 }
 void sysutil_set_nodelay(int fd)
 {
     int nodely;
-    if(setsockopt(fd,SOL_SOCKET,TCP_NODELAY,&nodely,sizeof(int)) < 0)
+    if(setsockopt(fd,SOL_TCP,TCP_NODELAY,&nodely,sizeof(int)) < 0)
 
         ;//die("setsockopt");
 }
@@ -960,8 +954,10 @@ void sysutil_activate_oobinline(int fd)
 }
 void sysutil_activate_linger(int fd)
 {
-    int klive;
-    if(setsockopt(fd,SOL_SOCKET,SO_KEEPALIVE,&klive,sizeof(int)) < 0)
+    struct linger st_linger;
+    st_linger.l_onoff = 0;
+    st_linger.l_linger = 0;
+    if(setsockopt(fd,SOL_SOCKET,SO_LINGER,&st_linger,sizeof(st_linger)) < 0)
         ;//die("setsockopt");
 }
 void sysutil_deactivate_linger_failok(int fd)
@@ -970,6 +966,15 @@ void sysutil_deactivate_linger_failok(int fd)
 }
 void sysutil_activate_noblock(int fd)
 {
+    int flags;
+    if((flags = fcntl(fd,F_GETFD,0)) < 0 ||
+            fcntl(fd , F_SETFD, flags | O_NONBLOCK) < 0)
+    {
+        ;//die("fcntl noblock");
+    }
+
+
+
 
 }
 void sysutil_deactivate_noblock(int fd)
@@ -1013,7 +1018,7 @@ const char* sysutil_inet_ntoa(const void* p_raw_addr)
 int sysutil_inet_aton(
   const char* p_text, struct sysutil_sockaddr* p_addr)
 {
-    return inet_aton(p_text,&p_sockptr->u.u_sockaddr_in.sin_addr);
+    return inet_aton(p_text,&p_addr->u.u_sockaddr_in.sin_addr);
 }
 
 
@@ -1027,29 +1032,29 @@ struct sysutil_user* sysutil_getpwnam(const char* p_user)
 }
 const char* sysutil_user_getname(const struct sysutil_user* p_user)
 {
-    return p_user;
+    return p_user->pw_name;
 }
 const char* sysutil_user_get_homedir(
   const struct sysutil_user* p_user)
 {
-    return 0;
+    return p_user->pw_dir;
 }
 int sysutil_user_getuid(const struct sysutil_user* p_user)
 {
-    return 0;
+    return p_user->pw_uid;
 }
 int sysutil_user_getgid(const struct sysutil_user* p_user)
 {
-    return 0;
+    return p_user->pw_gid;
 }
 
 struct sysutil_group* sysutil_getgrgid(const int gid)
 {
-    return NULL;
+    return getgrgid(gid);
 }
 const char* sysutil_group_getname(const struct sysutil_group* p_group)
 {
-    return NULL;
+    return p_group->gr_name;
 }
 
 /* More random things */
@@ -1063,23 +1068,27 @@ unsigned char sysutil_get_random_byte(void)
 }
 unsigned int sysutil_get_umask(void)
 {
-    return 0;
+    return umask(0);
 }
-void sysutil_set_umask(unsigned int umask)
+void sysutil_set_umask(unsigned int mask)
 {
+    umask(mask);
 }
 void sysutil_make_session_leader(void)
 {
 }
 void sysutil_reopen_standard_fds(void)
 {
+
 }
 void sysutil_tzset(void)
 {
 }
 const char* sysutil_get_current_date(void)
 {
-    return NULL;
+    struct timeval tv;
+    gettimeofday(&tv,NULL);
+    return ctime(&tv.tv_sec);
 }
 void sysutil_qsort(void* p_base, unsigned int num_elem,
                        unsigned int elem_size,
@@ -1090,7 +1099,7 @@ void sysutil_qsort(void* p_base, unsigned int num_elem,
 
 char* sysutil_getenv(const char* p_var)
 {
-    return NULL;
+    return getenv(p_var);
 }
 
 void sysutil_set_exit_func(exitfunc_t exitfunc)
@@ -1098,7 +1107,7 @@ void sysutil_set_exit_func(exitfunc_t exitfunc)
 }
 int sysutil_getuid(void)
 {
-    return 0;
+    return getuid();
 }
 
 /* Syslogging (bah) */
