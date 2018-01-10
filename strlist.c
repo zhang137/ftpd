@@ -44,8 +44,9 @@ unsigned int str_list_get_length(const struct mystr_list* p_list)
 int str_list_contains_str(const struct mystr_list* p_list,
                           const struct mystr* p_str)
 {
+    int i;
     struct mystr *pTemp = p_list;
-    for(int i = 0; i < p_list->list_len; i++)
+    for(i = 0; i < p_list->list_len; i++)
     {
         //if()
     }

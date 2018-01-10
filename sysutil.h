@@ -1,19 +1,19 @@
 #ifndef SYSUTIL_H_INCLUDED
 #define SYSUTIL_H_INCLUDED
 
+#include <netinet/in.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#include <grp.h>
 #include <pwd.h>
-#include <netinet/in.h>
+#include <grp.h>
 #include "filesize.h"
 
 #define sysutil_group group
 #define sysutil_user passwd
 #define sysutil_dir DIR
 #define sysutil_statbuf stat
-//#define  sysutil_wait_retval
-//typedef struct
+
+int saved_errno;
 
 struct sysutil_sockaddr
 {

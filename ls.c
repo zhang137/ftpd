@@ -58,8 +58,8 @@ void util_ls(const char *ptrPath)
     {
         stat(tmp->d_name,&statbuf);
         total_size += statbuf.st_size;
-        filesize_align = max_align(falign,statbuf.st_size);
-        linknum_align = max_align(lalign,statbuf.st_nlink);
+        filesize_align = max_align(filesize_align,statbuf.st_size);
+        linknum_align = max_align(linknum_align,statbuf.st_nlink);
     }
 
     rewinddir(Dir);
