@@ -10,8 +10,10 @@
 #include <netinet/ip6.h>
 #include <sys/wait.h>
 #include <sys/time.h>
+#include <utime.h>
 #include <sys/un.h>
 #include <sys/un.h>
+#include <syslog.h>
 #include <string.h>
 #include <limits.h>
 #include <signal.h>
@@ -111,8 +113,7 @@ struct sysutil_dir* sysutil_opendir(const char* p_dirname)
 
 void sysutil_closedir(struct sysutil_dir* p_dir)
 {
-    struct sysutil_dir* pdir = p_dir;
-    int ret = closedir(pdir);
+    int ret = closedir(p_dir);
     if(ret < 0);
         //die("closedir");
 }
@@ -208,7 +209,7 @@ int sysutil_read(const int fd, void* p_buf, const unsigned int size)
     nread = read(fd,p_buf,size);
     if(nread <= 0)
     {
-        if(errno == EINTR)
+        if(errno == EINTR || errno == EWOULDBLOCK)
             return 0;
         return -1;
     }
@@ -220,7 +221,7 @@ int sysutil_write(const int fd, const void* p_buf,const unsigned int size)
     nwrite = write(fd,p_buf,size);
     if(nwrite <= 0)
     {
-        if(errno == EINTR)
+        if(errno == EINTR || errno == EWOULDBLOCK)
             return 0;
         return -1;
     }
@@ -558,7 +559,7 @@ unsigned int sysutil_strlen(const char* p_text)
 }
 char* sysutil_strdup(const char* p_str)
 {
-    return 0;
+    return strdup(p_str);
 }
 void sysutil_memclr(void* p_dest, unsigned int size)
 {
@@ -737,7 +738,7 @@ int sysutil_get_ipsock(const struct sysutil_sockaddr* p_sockaddr)
 unsigned int sysutil_get_ipaddr_size(void)
 {
 
-    return 0;
+    return INET_ADDRSTRLEN;
 }
 void* sysutil_sockaddr_get_raw_addr(
   struct sysutil_sockaddr* p_sockaddr)
@@ -949,7 +950,7 @@ void sysutil_activate_sigurg(int fd)
 void sysutil_activate_oobinline(int fd)
 {
     int klive;
-    if(setsockopt(fd,SOL_SOCKET,SO_KEEPALIVE,&klive,sizeof(int)) < 0)
+    if(setsockopt(fd,SOL_SOCKET,SO_OOBINLINE,&klive,sizeof(int)) < 0)
         ;//die("setsockopt");
 }
 void sysutil_activate_linger(int fd)
@@ -973,27 +974,29 @@ void sysutil_activate_noblock(int fd)
         ;//die("fcntl noblock");
     }
 
-
-
-
 }
 void sysutil_deactivate_noblock(int fd)
 {
-
+    int flags;
+    if((flags = fcntl(fd,F_GETFD,0)) < 0 ||
+            fcntl(fd , F_SETFD, flags | ~O_NONBLOCK) < 0)
+    {
+        ;//die("fcntl noblock");
+    }
 }
 /* This does SHUT_RDWR */
 void sysutil_shutdown_failok(int fd)
 {
-
+    shutdown(fd,SHUT_RDWR);
 }
 /* And this does SHUT_RD */
 void sysutil_shutdown_read_failok(int fd)
 {
-
+    shutdown(fd,SHUT_RD);
 }
 int sysutil_recv_peek(const int fd, void* p_buf, unsigned int len)
 {
-    return 0;
+    return recv(fd,p_buf,len,MSG_PEEK);
 }
 
 const char* sysutil_inet_ntop( const struct sysutil_sockaddr* p_sockptr)
@@ -1060,15 +1063,17 @@ const char* sysutil_group_getname(const struct sysutil_group* p_group)
 /* More random things */
 unsigned int sysutil_getpagesize(void)
 {
-    return 0;
+    return getpagesize();
 }
 unsigned char sysutil_get_random_byte(void)
 {
-    return 0;
+    return ;
 }
 unsigned int sysutil_get_umask(void)
 {
-    return umask(0);
+    unsigned int mask = umask(0);
+    umask(mask);
+    return mask;
 }
 void sysutil_set_umask(unsigned int mask)
 {
@@ -1076,6 +1081,7 @@ void sysutil_set_umask(unsigned int mask)
 }
 void sysutil_make_session_leader(void)
 {
+
 }
 void sysutil_reopen_standard_fds(void)
 {
@@ -1083,6 +1089,7 @@ void sysutil_reopen_standard_fds(void)
 }
 void sysutil_tzset(void)
 {
+    tzset();
 }
 const char* sysutil_get_current_date(void)
 {
@@ -1104,6 +1111,7 @@ char* sysutil_getenv(const char* p_var)
 
 void sysutil_set_exit_func(exitfunc_t exitfunc)
 {
+    atexit(exitfunc);
 }
 int sysutil_getuid(void)
 {
@@ -1113,59 +1121,76 @@ int sysutil_getuid(void)
 /* Syslogging (bah) */
 void sysutil_openlog(int force)
 {
+    openlog(NULL,LOG_PID,force);
 }
 void sysutil_syslog(const char* p_text, int severe)
 {
+    syslog(severe,p_text);
 }
 void sysutil_closelog(void)
 {
+    closelog();
 }
 
 /* Credentials handling */
 int sysutil_running_as_root(void)
 {
+    //chroot()
     return 0;
 }
 void sysutil_setuid(const struct sysutil_user* p_user)
 {
+    setuid(p_user->pw_uid);
 }
 void sysutil_setgid(const struct sysutil_user* p_user)
 {
+    setgid(p_user->pw_gid);
 }
 void sysutil_setuid_numeric(int uid)
 {
+    setuid(uid);
 }
 void sysutil_setgid_numeric(int gid)
 {
+    setgid(gid);
 }
 int sysutil_geteuid(void)
 {
-    return 0;
+    return geteuid();
 }
 int sysutil_getegid(void)
 {
-    return 0;
+    return getegid();
 }
 void sysutil_seteuid(const struct sysutil_user* p_user)
 {
+    seteuid(p_user->pw_uid);
 }
 void sysutil_setegid(const struct sysutil_user* p_user)
 {
+    setegid(p_user->pw_gid);
 }
 void sysutil_seteuid_numeric(int uid)
 {
+    seteuid(uid);
 }
 void sysutil_setegid_numeric(int gid)
 {
+    setegid(gid);
 }
 void sysutil_clear_supp_groups(void)
 {
+
 }
+
 void sysutil_initgroups(const struct sysutil_user* p_user)
 {
+
 }
+
 void sysutil_chroot(const char* p_root_path)
 {
+    chroot(p_root_path);
 }
 
 /* Time handling */
@@ -1174,11 +1199,15 @@ void sysutil_chroot(const char* p_root_path)
  */
 long sysutil_get_time_sec(void)
 {
-    return 0;
+    struct timeval tv;
+    gettimeofday(&tv,NULL);
+    return tv.tv_sec;
 }
 long sysutil_get_time_usec(void)
 {
-    return 0;
+    struct timeval tv;
+    gettimeofday(&tv,NULL);
+    return tv.tv_usec;
 }
 long sysutil_parse_time(const char* p_text)
 {
@@ -1186,10 +1215,23 @@ long sysutil_parse_time(const char* p_text)
 }
 void sysutil_sleep(double seconds)
 {
+    sleep(seconds);
 }
 int sysutil_setmodtime(const char* p_file, long the_time, int is_localtime)
 {
-    return 0;
+    struct utimbuf utb;
+    int res;
+    if(is_localtime)
+    {
+       res = utime(p_file,NULL);
+    }
+    else
+    {
+        utb.modtime = the_time;
+        res = utime(p_file,&utb);
+    }
+
+    return res;
 }
 
 void sysutil_set_address_space_limit(unsigned long bytes)
@@ -1198,7 +1240,17 @@ void sysutil_set_address_space_limit(unsigned long bytes)
 }
 void sysutil_set_no_fds()
 {
+    int fd;
+    fd = open("/dev/null",O_RDWR);
 
+    sysutil_dupfd2(fd,STDIN_FILENO);
+    sysutil_dupfd2(fd,STDOUT_FILENO);
+    sysutil_dupfd2(fd,STDERR_FILENO);
+
+    if(fd > 2)
+    {
+        close(fd);
+    }
 }
 
 void sysutil_set_no_procs()
