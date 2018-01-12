@@ -44,10 +44,11 @@
 
 1515380100 /home/usr/projects/ftp/ftpd/ftpcmd.h
 
-1515380100 source:/home/usr/projects/ftp/ftpd/main.c
+1515744501 source:/home/usr/projects/ftp/ftpd/main.c
 	<stdio.h>
 	<stdlib.h>
 	"session.h"
+	"str.h"
 
 1515380100 /home/usr/projects/ftp/ftpd/session.h
 	"filesize.h"
@@ -71,7 +72,7 @@
 1515380100 /home/usr/projects/ftp/ftpd/str.h
 	"filesize.h"
 
-1515396671 source:/home/usr/projects/ftp/ftpd/str.c
+1515744417 source:/home/usr/projects/ftp/ftpd/str.c
 	"str.h"
 	"sysutil.h"
 
@@ -79,7 +80,7 @@
 	<stdlib.h>
 	"strlist.h"
 
-1515571710 source:/home/usr/projects/ftp/ftpd/ls.c
+1515736293 source:/home/usr/projects/ftp/ftpd/ls.c
 	<stdio.h>
 	<stdlib.h>
 	<sys/types.h>
@@ -91,21 +92,30 @@
 	<grp.h>
 	<pwd.h>
 
-1515397199 source:/home/usr/projects/ftp/ftpd/sysutil.c
+1515654193 source:/home/usr/projects/ftp/ftpd/sysutil.c
 	<stdio.h>
 	<stdlib.h>
-	<fcntl.h>
-	<unistd.h>
-	<netdb.h>
 	<sys/types.h>
 	<arpa/inet.h>
 	<sys/socket.h>
-	<sys/wait.h>
-	<dirent.h>
-	<sys/stat.h>
 	<sys/signal.h>
+	<sys/select.h>
+	<netinet/tcp.h>
+	<netinet/ip.h>
+	<netinet/ip6.h>
+	<sys/wait.h>
+	<sys/time.h>
+	<utime.h>
+	<sys/un.h>
+	<sys/un.h>
+	<syslog.h>
 	<string.h>
 	<limits.h>
+	<signal.h>
+	<fcntl.h>
+	<unistd.h>
+	<netdb.h>
+	<time.h>
 	<ctype.h>
 	<errno.h>
 	"sysutil.h"

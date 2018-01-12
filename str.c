@@ -82,7 +82,7 @@ unsigned int str_getlen(const struct mystr* p_str)
 const char* str_getbuf(const struct mystr* p_str)
 {
     return (const char *)p_str->pbuf;
-}sysutil_memcpy
+}
 
 int str_strcmp(const struct mystr* p_str1, const struct mystr* p_str2)
 {
@@ -113,64 +113,88 @@ int str_equal(const struct mystr* p_str1, const struct mystr* p_str2)
 }
 int str_equal_text(const struct mystr* p_str, const char* p_text)
 {
-    unsigned int ptext_len = sysutil_strlen(p_text);
-    return (str_equal_internal(p_str->pbuf,p_str->num_len,p_text,ptext_len) == 0);
+    unsigned int text_len = sysutil_strlen(p_text);
+    return (str_equal_internal(p_str->pbuf,p_str->num_len,p_text,text_len) == 0);
 }
 void str_append_str(struct mystr* p_str, const struct mystr* p_other)
 {
     int num_len = p_str->num_len;
-    int append_len = p_str->alloc_bytes - num_len;
-    append_len = min(append_len,p_other->num_len);
-    p_str->num_len += append_len;
+    int append_len = p_other->num_len;
+    int left_len = p_str->alloc_bytes - num_len;
+    if(left_len < append_len)
+    {
+        str_rpad(p_str,append_len-left_len);
+    }
+
     sysutil_memcpy(p_str->pbuf+num_len,p_other->pbuf,append_len);
+    p_str->num_len += append_len;
 }
+
 void str_append_text(struct mystr* p_str, const char* p_src)
 {
     int num_len = p_str->num_len;
-    int append_len = p_str->alloc_bytes - num_len;
-    append_len = min(append_len,p_other->num_len);
-    p_str->num_len += append_len;
-    sysutil_memcpy(p_str->pbuf+num_len,p_other->pbuf,append_len);
+    int append_len = sysutil_strlen(p_src);
+    int left_len = p_str->alloc_bytes - num_len;
+    if(left_len < append_len)
+    {
+        str_rpad(p_str,append_len-left_len);
+    }
 
+    sysutil_memcpy(p_str->pbuf+num_len,p_src,append_len);
+    p_str->num_len += append_len;
 }
 void str_append_ulong(struct mystr* p_str, unsigned long the_long) /// ?????
 {
     int num_len = p_str->num_len;
     int ulong_size = sizeof(unsigned long);
-    int append_len = p_str->alloc_bytes - num_len;
-    if(append_len < ulong_size) return;
-    p_str->num_len += ulong_size;
+    int left_len = p_str->alloc_bytes - num_len;
+    if(left_len < ulong_size)
+    {
+         str_rpad(p_str,ulong_size - left_len);
+    }
+
     sysutil_memcpy(p_str->pbuf+num_len,the_long,ulong_size);
+    p_str->num_len += ulong_size;
 }
 
 void str_append_filesize_t(struct mystr* p_str, filesize_t the_filesize)
 {
     int num_len = p_str->num_len;
     int filesize_t_size = sizeof(filesize_t);
-    int append_len = p_str->alloc_bytes - num_len;
-    if(append_len < filesize_t_size) return;
+    int left_len = p_str->alloc_bytes - num_len;
+    if(left_len < filesize_t_size)
+    {
+        str_rpad(p_str,filesize_t_size - left_len);
+    }
+
+    sysutil_memcpy(p_str->pbuf+num_len,the_filesize,filesize_t_size);
     p_str->num_len += filesize_t_size;
-    sysutil_memcpy(p_str->pbuf+num_len,the_long,filesize_t_size);
 }
 
 void str_append_char(struct mystr* p_str, char the_char)
 {
     int num_len = p_str->num_len;
     int char_size = sizeof(the_char);
-    int append_len = p_str->alloc_bytes - num_len;
-    if(append_len < char_size) return;
-    p_str->num_len += char_size;
+    int left_len = p_str->alloc_bytes - num_len;
+    if(left_len < char_size)
+    {
+        str_rpad(p_str,1);
+    }
     sysutil_memcpy(p_str->pbuf+num_len,the_char,char_size);
+    p_str->num_len += char_size;
 }
 
 void str_append_double(struct mystr* p_str, double the_double)
 {
     int num_len = p_str->num_len;
     int double_size = sizeof(the_double);
-    int append_len = p_str->alloc_bytes - num_len;
-    if(append_len < double_size) return;
+    int left_len = p_str->alloc_bytes - num_len;
+    if(left_len < double_size)
+    {
+        str_rpad(p_str,double_size-left_len);
+    }
+    sysutil_memcpy(p_str->pbuf+num_len,&the_double,double_size);
     p_str->num_len += double_size;
-    sysutil_memcpy(p_str->pbuf+num_len,the_char,double_size);
 }
 
 void str_upper(struct mystr* p_str)
@@ -184,22 +208,22 @@ void str_upper(struct mystr* p_str)
 
 void str_rpad(struct mystr* p_str, const unsigned int min_width)
 {
-    int adjust_len = p_str->alloc_bytes + min_width
-    char *tmp = (char *)sysutil_malloc(adjust_len);
-    sysutil_memcpy(tmp+min_width,p_str->pbuf,p_str->num_len);
+    int adjust_len = p_str->alloc_bytes + min_width;
+    void *tmp = sysutil_malloc(adjust_len);
+    sysutil_memcpy(tmp,p_str->pbuf,p_str->num_len);
     sysutil_free(p_str->pbuf);
     p_str->pbuf = tmp;
-    p_str->alloc_bytes = adjust;
+    p_str->alloc_bytes = adjust_len;
 }
 
 void str_lpad(struct mystr* p_str, const unsigned int min_width)
 {
-    int adjust_len = p_str->alloc_bytes + min_width
-    char *tmp = (char *)sysutil_malloc(adjust_len);
+    int adjust_len = p_str->alloc_bytes + min_width;
+    void *tmp = sysutil_malloc(adjust_len);
     sysutil_memcpy(tmp+min_width,p_str->pbuf,p_str->num_len);
     sysutil_free(p_str->pbuf);
     p_str->pbuf = tmp;
-    p_str->alloc_bytes = adjust;
+    p_str->alloc_bytes = adjust_len;
 }
 
 void str_replace_char(struct mystr* p_str, char from, char to)
@@ -215,39 +239,105 @@ void str_replace_text(struct mystr* p_str, const char* p_from,
 
 void str_split_char(struct mystr* p_src, struct mystr* p_rhs, char c)
 {
-    int ipos, i,surplus_size;
+    int ipos,surplus_size;
     int str_len = p_src->num_len;
     for(ipos = 0; ipos < str_len; ipos++)
     {
-        if(p_src[ipos] == c)
+        if(p_src->pbuf[ipos] == c)
             break;
     }
-
+    //12345c12345
     surplus_size = str_len - ipos - 1;
     if(surplus_size > 0)
     {
-        p_rhs.pbuf = sysutil_malloc(surplus_size);
-        sysutil_memcpy(p_rhs.pbuf,p_src->pbuf+ipos+1,surplus_size);
-        p_rhs.num_len = p_rhs.alloc_bytes = surplus_size;
-
-        sysutil_memclr(p_src->pbuf+iops,surplus_size+1);
-        p_src->num_len = ipos;
+        p_rhs->pbuf = sysutil_malloc(surplus_size);
+        sysutil_memcpy(p_rhs->pbuf,p_src->pbuf+ipos+1,surplus_size);
+        p_rhs->num_len = p_rhs->alloc_bytes = surplus_size;
     }
+    sysutil_memclr(p_src->pbuf+ipos,surplus_size+1);
+    p_src->num_len = ipos;
 }
 
 void str_split_char_reverse(struct mystr* p_src, struct mystr* p_rhs, char c)
 {
-
+    int ipos,surplus_size;
+    int str_len = p_src->num_len;
+    for(ipos = str_len - 1; ipos >= 0; ipos--)
+    {
+        if(p_src->pbuf[ipos] == c)
+            break;
+    }
+    //12345s12345
+    surplus_size = str_len - ipos - 1;
+    if(surplus_size > 0)
+    {
+        p_rhs->pbuf = sysutil_malloc(surplus_size);
+        p_rhs->num_len = p_rhs->alloc_bytes = surplus_size;
+        sysutil_memcpy(p_rhs->pbuf,p_src->pbuf+ipos+1,surplus_size);
+    }
+    sysutil_memclr(p_src->pbuf+ipos,str_len-ipos);
+    p_src->num_len = ipos;
 }
 
 void str_split_text(struct mystr* p_src, struct mystr* p_rhs,
                     const char* p_text)
 {
+    int ipos,jpos,kpos,surplus_size;
+    int src_len = p_src->num_len;
+    int match_len = sysutil_strlen(p_text);
+
+    if(!p_text[0]) return;
+
+    for(ipos = 0; ipos < src_len; ipos++)
+    {
+        for(jpos = 0,kpos = ipos; p_src->pbuf[kpos] == p_text[jpos]
+                     && p_text[jpos] != '\0'; kpos++,jpos++) ;
+        if(!p_text[jpos]) break;
+    }
+    //1234567str1234
+    //str12345678912
+    //12345678911str
+    surplus_size = src_len - match_len - ipos;
+
+    if(surplus_size)
+    {
+        p_rhs->pbuf = malloc(surplus_size);
+        p_rhs->alloc_bytes = surplus_size;
+        p_rhs->num_len = surplus_size;
+        sysutil_memcpy(p_rhs->pbuf, p_src->pbuf+ipos+match_len, surplus_size);
+    }
+
+    sysutil_memclr(p_src->pbuf+ipos,match_len+surplus_size);
+    p_src->num_len = ipos;
+
 }
 
 void str_split_text_reverse(struct mystr* p_src, struct mystr* p_rhs,
                             const char* p_text)
 {
+    int ipos,jpos,kpos,surplus_size;
+    int src_len = p_src->num_len;
+    int match_len = sysutil_strlen(p_text);
+
+    if(!p_text[0]) return;
+    for(ipos = src_len-match_len+1; ipos > 0; ipos--)
+    {
+        for(jpos = 0,kpos = ipos; p_src->pbuf[kpos] == p_text[jpos]
+                     && p_text[jpos] != '\0'; kpos++,jpos++) ;
+        if(!p_text[jpos]) break;
+    }
+    //1234567str1234
+    surplus_size = src_len - match_len - ipos;
+    if(surplus_size > 0)
+    {
+        p_rhs->pbuf = malloc(surplus_size);
+        p_rhs->alloc_bytes = surplus_size;
+        p_rhs->num_len = surplus_size;
+        sysutil_memcpy(p_rhs->pbuf, p_src->pbuf+ipos+match_len, surplus_size);
+    }
+
+    sysutil_memclr(p_src->pbuf+ipos,match_len+surplus_size);
+    p_src->num_len = ipos;
 }
 
 struct str_locate_result str_locate_char(
@@ -279,34 +369,86 @@ struct str_locate_result str_locate_chars(
 void str_left(const struct mystr* p_str, struct mystr* p_out,
               unsigned int chars)
 {
+    if(chars <= 0 ) return;
+    if (chars > p_str->num_len)
+        chars = p_str->num_len;
+
+    p_out->pbuf = sysutil_malloc(chars);
+    p_out->alloc_bytes = p_out->num_len = chars;
+    sysutil_memcpy(p_out->pbuf,p_str->pbuf,chars);
 }
 void str_right(const struct mystr* p_str, struct mystr* p_out,
                unsigned int chars)
 {
+    if(chars <= 0 ) return;
+    if (chars > p_str->num_len)
+        chars = p_str->num_len;
+
+    int index = p_str->num_len - chars;
+    p_out->pbuf = sysutil_malloc(chars);
+    p_out->alloc_bytes = p_out->num_len = chars;
+    sysutil_memcpy(p_out->pbuf,p_str->pbuf+index,chars);
+
 }
 void str_mid_to_end(const struct mystr* p_str, struct mystr* p_out,
                     unsigned int indexx)
 {
+    //12356
+    int len = p_str->num_len - indexx;
+    p_out->pbuf = sysutil_malloc(len);
+    p_out->alloc_bytes = p_out->num_len = len;
+    sysutil_memcpy(p_out->pbuf,p_str->pbuf+indexx,len);
 }
 
 char str_get_char_at(const struct mystr* p_str, const unsigned int indexx)
 {
+    return (char)p_str->pbuf[indexx];
 }
 int str_contains_space(const struct mystr* p_str)
 {
 }
 int str_all_space(const struct mystr* p_str)
 {
+    int i;
+    if(p_str->num_len > 0)
+    {
+        for(i = 0; i < p_str->num_len; i++)
+        {
+            if(!sysutil_isspace(str_get_char_at(p_str->pbuf,i)))
+                 return 0;
+        }
+    }
+    return 1;
 }
 int str_contains_unprintable(const struct mystr* p_str)
 {
+    int i;
+    if(p_str->num_len > 0)
+    {
+        for(i = 0; i < p_str->num_len; i++)
+        {
+            if(!sysutil_isprint(p_str->pbuf[i]))
+                return 1;
+        }
+    }
+    return 0;
 }
 void str_replace_unprintable(struct mystr* p_str, char new_char)
 {
+    int i;
+    if(p_str->num_len > 0)
+    {
+        for(i = 0; i < p_str->num_len; i++)
+        {
+            if(!sysutil_isprint(p_str->pbuf[i]))
+                p_str->pbuf[i] = new_char;
+        }
+    }
+
 }
 int str_atoi(const struct mystr* p_str)
 {
-
+    return atoi(p_str->pbuf);
 }
 
 filesize_t str_a_to_filesize_t(const struct mystr* p_str)
@@ -322,6 +464,26 @@ unsigned int str_octal_to_uint(const struct mystr* p_str)
 int str_getline(const struct mystr* p_str, struct mystr* p_line_str,
                 unsigned int* p_pos)
 {
+    //123456
+    int ipos;
+    int src_len = p_str->num_len;
+    for (ipos = 0; ipos < src_len; ipos++)
+    {
+        if(p_str->pbuf[ipos] == '\n')
+        {
+            break;
+        }
+    }
+
+    if(ipos == str_len) return;
+
+    if(ipos > 0)
+    {
+        p_line_str->pbuf = sysutil_malloc(ipos);
+        p_line_str->num_len = p_line_str->alloc_bytes = ipos;
+        sysutil_memcpy(p_line_str->pbuf,p_str->pbuf,ipos);
+        *p_pos = ipos;
+    }
 
 }
 

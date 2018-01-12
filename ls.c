@@ -63,7 +63,11 @@ void util_ls(const char *ptrPath)
     }
 
     rewinddir(Dir);
-    fprintf(stdout,"total  %llu\n",total_size/1024);
+    if(total_size > 1024)
+        fprintf(stdout,"total  %llu\n",total_size/1024);
+    else
+        fprintf(stdout,"total  %llu\n",total_size);
+
     while(tmp = readdir(Dir))
     {
 
