@@ -740,19 +740,19 @@ unsigned int sysutil_get_ipaddr_size(void)
 
     return INET_ADDRSTRLEN;
 }
-void* sysutil_sockaddr_get_raw_addr(
-  struct sysutil_sockaddr* p_sockaddr)
-  {
-      return 0;
-}
-const void* sysutil_sockaddr_ipv6_v4(
-  const struct sysutil_sockaddr* p_sockaddr)
-  {
-      return NULL;
-}
-const void* sysutil_sockaddr_ipv4_v6(
-  const struct sysutil_sockaddr* p_sockaddr)
+void* sysutil_sockaddr_get_raw_addr(struct sysutil_sockaddr* p_sockaddr)
 {
+
+    return 0;
+}
+const void* sysutil_sockaddr_ipv6_v4(const struct sysutil_sockaddr* p_sockaddr)
+{
+
+    return NULL;
+}
+const void* sysutil_sockaddr_ipv4_v6( const struct sysutil_sockaddr* p_sockaddr)
+{
+
     return 0;
 }
 

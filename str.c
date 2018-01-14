@@ -475,7 +475,7 @@ int str_getline(const struct mystr* p_str, struct mystr* p_line_str,
         }
     }
 
-    if(ipos == str_len) return;
+   // if(ipos == str_len) return;
 
     if(ipos > 0)
     {

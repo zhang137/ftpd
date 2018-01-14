@@ -4,10 +4,14 @@
 
 1514800126 /home/zyy/ftp/ftp/ftpcmd.h
 
-1514903986 source:/home/zyy/ftp/ftp/main.c
+1515925989 source:/home/zyy/ftp/ftp/main.c
 	<stdio.h>
 	<stdlib.h>
 	"session.h"
+	"twoprocess.h"
+	"sysutil.h"
+	"str.h"
+	<errno.h>
 
 1514904473 /home/zyy/ftp/ftp/session.h
 	"filesize.h"
@@ -31,7 +35,7 @@
 
 1514806534 /home/zyy/ftp/ftp/filesize.h
 
-1515409776 source:/home/zyy/ftp/ftp/str.c
+1515926018 source:/home/zyy/ftp/ftp/str.c
 	"str.h"
 	"sysutil.h"
 
@@ -120,7 +124,7 @@
 	<errno.h>
 	"sysutil.h"
 
-1515593619 source:/home/zyy/ftp/ftp/ls.c
+1515919134 source:/home/zyy/ftp/ftp/ls.c
 	<stdio.h>
 	<stdlib.h>
 	<sys/types.h>
@@ -131,4 +135,47 @@
 	<time.h>
 	<grp.h>
 	<pwd.h>
+
+1515925022 source:/home/zyy/ftp/ftp/controlprocess.c
+	"controlprocess.h"
+
+1515925040 /home/zyy/ftp/ftp/controlprocess.h
+
+1515925010 source:/home/zyy/ftp/ftp/dataprocess.c
+	"dataprocess.h"
+
+1515925047 /home/zyy/ftp/ftp/dataprocess.h
+
+1515925043 /home/zyy/ftp/ftp/twoprocess.h
+
+1515924688 source:/home/zyy/ftp/ftp/sysutil.c
+	<stdio.h>
+	<stdlib.h>
+	<sys/types.h>
+	<arpa/inet.h>
+	<sys/socket.h>
+	<sys/signal.h>
+	<sys/select.h>
+	<netinet/tcp.h>
+	<netinet/ip.h>
+	<netinet/ip6.h>
+	<sys/wait.h>
+	<sys/time.h>
+	<utime.h>
+	<sys/un.h>
+	<sys/un.h>
+	<syslog.h>
+	<string.h>
+	<limits.h>
+	<signal.h>
+	<fcntl.h>
+	<unistd.h>
+	<netdb.h>
+	<time.h>
+	<ctype.h>
+	<errno.h>
+	"sysutil.h"
+
+1515925032 source:/home/zyy/ftp/ftp/twoprocess.c
+	"twoprocess.h"
 

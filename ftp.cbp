@@ -31,6 +31,14 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
+		<Unit filename="controlprocess.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="controlprocess.h" />
+		<Unit filename="dataprocess.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="dataprocess.h" />
 		<Unit filename="filesize.h" />
 		<Unit filename="ftpcmd.c">
 			<Option compilerVar="CC" />
@@ -44,6 +52,10 @@
 		<Unit filename="main.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="prelogin.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="prelogin.h" />
 		<Unit filename="session.h" />
 		<Unit filename="str.c">
 			<Option compilerVar="CC" />
@@ -57,6 +69,10 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="sysutil.h" />
+		<Unit filename="twoprocess.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="twoprocess.h" />
 		<Extensions>
 			<envvars />
 			<code_completion />
