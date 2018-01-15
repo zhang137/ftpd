@@ -5,7 +5,7 @@
 #include "sysutil.h"
 #include "strlist.h"
 
-struct _session
+struct ftpd_session
 {
   /* Details of the control connection */
   struct sysutil_sockaddr* p_local_addr;
@@ -26,7 +26,7 @@ struct _session
   /* Details of the login */
   int is_anonymous;
   struct mystr user_str;
-  struct mystr anon_pass_str;
+  struct mystr passwd_str;
 
   /* Details of the FTP protocol state */
   filesize_t restart_pos;

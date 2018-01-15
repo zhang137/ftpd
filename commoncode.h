@@ -1,0 +1,11 @@
+#ifndef COMMONCODE_H_INCLUDED
+#define COMMONCODE_H_INCLUDED
+
+enum
+{
+    FTP_IS_ANOUTMOUS = 0x01,
+
+};
+
+
+#endif // COMMONCODE_H_INCLUDED

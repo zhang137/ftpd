@@ -366,5 +366,6 @@ void sysutil_set_address_space_limit(unsigned long bytes);
 void sysutil_set_no_fds();
 void sysutil_set_no_procs();
 
+void sysutil_deamon();
 
 #endif // SYSUTIL_H_INCLUDED

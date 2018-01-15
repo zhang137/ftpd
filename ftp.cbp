@@ -31,6 +31,7 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
+		<Unit filename="commoncode.h" />
 		<Unit filename="controlprocess.c">
 			<Option compilerVar="CC" />
 		</Unit>

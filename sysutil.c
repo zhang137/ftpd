@@ -12,7 +12,6 @@
 #include <sys/time.h>
 #include <utime.h>
 #include <sys/un.h>
-#include <sys/un.h>
 #include <syslog.h>
 #include <string.h>
 #include <limits.h>
@@ -155,16 +154,19 @@ int sysutil_create_or_open_file(const char* p_filename, unsigned int mode)
 }
 void sysutil_dupfd2(int old_fd, int new_fd)
 {
-
+    dup2(old_fd,new_fd);
 }
 void sysutil_close(int fd)
 {
-    close(fd);
+    if(sysutil_close_failok(fd))
+    {
+        ;//die("")
+    }
 }
 
 int sysutil_close_failok(int fd)
 {
-    return 0;
+    return close(fd);
 }
 
 int sysutil_unlink(const char* p_dead)
@@ -493,16 +495,20 @@ int sysutil_fork(void)
 {
     pid_t pid;
     pid = fork();
-    if(pid > 0)
+    if(pid < 0)
     {
-        sysutil_exit(-1);
+        sysutil_exit(EXIT_FAILURE);
     }
-    return 0;
+    return pid;
 }
 int sysutil_fork_failok(void)
 {
-
-    return 0;
+    pid_t pid;
+    if((pid = sysutil_fork()) > 0)
+    {
+        sysutil_exit(EXIT_SUCCESS);
+    }
+    return pid;
 }
 void sysutil_exit(int exit_code)
 {
@@ -1121,7 +1127,7 @@ int sysutil_getuid(void)
 /* Syslogging (bah) */
 void sysutil_openlog(int force)
 {
-    openlog(NULL,LOG_PID,force);
+    openlog("ftpd",LOG_PID,force);
 }
 void sysutil_syslog(const char* p_text, int severe)
 {
@@ -1240,8 +1246,34 @@ void sysutil_set_address_space_limit(unsigned long bytes)
 }
 void sysutil_set_no_fds()
 {
+
+}
+
+void sysutil_set_no_procs()
+{
+
+}
+
+void sysutil_deamon()
+{
     int fd;
-    fd = open("/dev/null",O_RDWR);
+    if(sysutil_fork() > 0)
+    {
+        sysutil_exit(EXIT_SUCCESS);
+    }
+
+    setsid();
+
+    if(sysutil_fork() > 0)
+    {
+        sysutil_exit(EXIT_SUCCESS);
+    }
+
+    if((fd = open("/dev/null",O_RDWR)) < 0)
+    {
+        fprintf(STDERR_FILENO,"open file");
+        exit(EXIT_FAILURE);
+    }
 
     sysutil_dupfd2(fd,STDIN_FILENO);
     sysutil_dupfd2(fd,STDOUT_FILENO);
@@ -1251,13 +1283,9 @@ void sysutil_set_no_fds()
     {
         close(fd);
     }
+    sysutil_chdir("/");
+    sysutil_set_umask(0);
 }
-
-void sysutil_set_no_procs()
-{
-
-}
-
 
 
 

@@ -48,20 +48,28 @@
 
 1515380100 /home/usr/projects/ftp/ftpd/ftpcmd.h
 
-1515744501 source:/home/usr/projects/ftp/ftpd/main.c
+1516008014 source:/home/usr/projects/ftp/ftpd/main.c
 	<stdio.h>
 	<stdlib.h>
+	<syslog.h>
 	"session.h"
+	"twoprocess.h"
+	"sysutil.h"
+	"prelogin.h"
 	"str.h"
+	"strlist.h"
+	<fcntl.h>
+	<stdlib.h>
+	<stdio.h>
 
-1515380100 /home/usr/projects/ftp/ftpd/session.h
+1515986057 /home/usr/projects/ftp/ftpd/session.h
 	"filesize.h"
 	"sysutil.h"
 	"strlist.h"
 
 1515380100 /home/usr/projects/ftp/ftpd/filesize.h
 
-1515637282 /home/usr/projects/ftp/ftpd/sysutil.h
+1515985997 /home/usr/projects/ftp/ftpd/sysutil.h
 	<netinet/in.h>
 	<sys/stat.h>
 	<dirent.h>
@@ -69,18 +77,18 @@
 	<grp.h>
 	"filesize.h"
 
-1515380100 /home/usr/projects/ftp/ftpd/strlist.h
+1516004739 /home/usr/projects/ftp/ftpd/strlist.h
 	<netinet/in.h>
 	"str.h"
 
 1515380100 /home/usr/projects/ftp/ftpd/str.h
 	"filesize.h"
 
-1515744417 source:/home/usr/projects/ftp/ftpd/str.c
+1515979030 source:/home/usr/projects/ftp/ftpd/str.c
 	"str.h"
 	"sysutil.h"
 
-1515574650 source:/home/usr/projects/ftp/ftpd/strlist.c
+1516008772 source:/home/usr/projects/ftp/ftpd/strlist.c
 	<stdlib.h>
 	"strlist.h"
 
@@ -96,7 +104,7 @@
 	<grp.h>
 	<pwd.h>
 
-1515654193 source:/home/usr/projects/ftp/ftpd/sysutil.c
+1516002969 source:/home/usr/projects/ftp/ftpd/sysutil.c
 	<stdio.h>
 	<stdlib.h>
 	<sys/types.h>
@@ -110,7 +118,6 @@
 	<sys/wait.h>
 	<sys/time.h>
 	<utime.h>
-	<sys/un.h>
 	<sys/un.h>
 	<syslog.h>
 	<string.h>
@@ -178,4 +185,24 @@
 
 1515925032 source:/home/zyy/ftp/ftp/twoprocess.c
 	"twoprocess.h"
+
+1515981621 source:/home/usr/projects/ftp/ftpd/controlprocess.c
+	"controlprocess.h"
+
+1515979806 /home/usr/projects/ftp/ftpd/controlprocess.h
+
+1515981613 source:/home/usr/projects/ftp/ftpd/dataprocess.c
+	"dataprocess.h"
+
+1515979836 /home/usr/projects/ftp/ftpd/dataprocess.h
+
+1515981599 source:/home/usr/projects/ftp/ftpd/twoprocess.c
+	"twoprocess.h"
+
+1515979963 /home/usr/projects/ftp/ftpd/twoprocess.h
+
+1515984913 source:/home/usr/projects/ftp/ftpd/prelogin.c
+	"prelogin.h"
+
+1515988176 /home/usr/projects/ftp/ftpd/prelogin.h
 
