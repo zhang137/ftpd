@@ -648,10 +648,10 @@ void sysutil_sockaddr_alloc(struct sysutil_sockaddr** p_sockptr)
 {
 
     struct sysutil_sockaddr *tmp_addr;
-    struct sockaddr saddr;
+
     tmp_addr = (struct sysutil_sockaddr *)sysutil_malloc(sizeof(struct sysutil_sockaddr));
     sysutil_sockaddr_clear(&tmp_addr);
-    tmp_addr->u.u_sockaddr = saddr;
+
     *p_sockptr = tmp_addr;
 }
 void sysutil_sockaddr_clear(struct sysutil_sockaddr** p_sockptr)
@@ -663,8 +663,10 @@ void sysutil_sockaddr_alloc_ipv4(struct sysutil_sockaddr** p_sockptr)
     struct sysutil_sockaddr *tmp_addr;
     struct sockaddr_in saddr_in;
     saddr_in.sin_family = AF_INET;
+
     tmp_addr = (struct sysutil_sockaddr *)sysutil_malloc(sizeof(struct sysutil_sockaddr));
     sysutil_sockaddr_clear(&tmp_addr);
+
     tmp_addr->u.u_sockaddr_in = saddr_in;
     *p_sockptr = tmp_addr;
 
@@ -673,9 +675,11 @@ void sysutil_sockaddr_alloc_ipv6(struct sysutil_sockaddr** p_sockptr)
 {
     struct sysutil_sockaddr *tmp_addr;
     struct sockaddr_in6 saddr_in6;
+
     saddr_in6.sin6_family = AF_INET6;
     tmp_addr = (struct sysutil_sockaddr *)sysutil_malloc(sizeof(struct sysutil_sockaddr));
     sysutil_sockaddr_clear(&tmp_addr);
+
     tmp_addr->u.u_sockaddr_in6 = saddr_in6;
     *p_sockptr = tmp_addr;
 }
@@ -764,11 +768,16 @@ const void* sysutil_sockaddr_ipv4_v6( const struct sysutil_sockaddr* p_sockaddr)
 
 int sysutil_get_ipv4_sock(void)
 {
-    return socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
+    int fd;
+    if((fd = socket(AF_INET,SOCK_STREAM,IPPROTO_TCP)) < 0)
+    {
+        sysutil_exit(EXIT_FAILURE);
+    }
+    return fd;
 }
 int sysutil_get_ipv6_sock(void)
 {
-    return socket(AF_INET6,SOCK_STREAM,IPPROTO_TCP);
+    //return socket(AF_INET6,SOCK_STREAM,IPPROTO_TCP);
 }
 
 struct sysutil_socketpair_retval
@@ -847,13 +856,13 @@ int sysutil_accept_timeout(int fd, struct sysutil_sockaddr* p_sockaddr,
     FD_ZERO(&rfdset);
     FD_ZERO(&wfdset);
 
-    FD_SET(clientfd,&rfdset);
-    FD_SET(clientfd,&wfdset);
+    FD_SET(fd,&rfdset);
+    FD_SET(fd,&wfdset);
 
     res = select(fd+1,&rfdset,&wfdset,NULL,&tv);
     if(res > 0)
     {
-        if(FD_ISSET(fd,&rfdset) && ! FD_ISSET(fd,&wfdset))
+        if(FD_ISSET(fd,&rfdset) && !FD_ISSET(fd,&wfdset))
         {
             clientfd = accept(fd,(struct sockaddr*)&p_sockaddr->u.u_sockaddr_in,sizeof(struct sockaddr));
             if(clientfd > 0)
@@ -861,7 +870,7 @@ int sysutil_accept_timeout(int fd, struct sysutil_sockaddr* p_sockaddr,
                 return clientfd;
             }
         }
-        if(FD_ISSET(fd,&rfdset) && FD_ISSET(fd,&wfdset))
+        else if(FD_ISSET(fd,&rfdset) && FD_ISSET(fd,&wfdset))
         {
             int error;
             if(!setsockopt(fd,SOL_SOCKET,SO_ERROR,&error,sizeof(int)))
@@ -905,7 +914,7 @@ int sysutil_connect_timeout(int fd,
     {
         if(FD_ISSET(fd,&wfdset) && ! FD_ISSET(fd,&rfdset))
             return 0;
-        if(FD_ISSET(fd,&rfdset) && FD_ISSET(fd,&wfdset))
+        else if(FD_ISSET(fd,&rfdset) && FD_ISSET(fd,&wfdset))
         {
             int error;
             if(!setsockopt(fd,SOL_SOCKET,SO_ERROR,&error,sizeof(int)))
@@ -969,7 +978,11 @@ void sysutil_activate_linger(int fd)
 }
 void sysutil_deactivate_linger_failok(int fd)
 {
-
+//    struct linger st_linger;
+//    st_linger.l_onoff = 0;
+//    st_linger.l_linger = 0;
+//    if(setsockopt(fd,SOL_SOCKET,SO_DONTLINGER,&st_linger,sizeof(st_linger)) < 0)
+//        ;//die("setsockopt");
 }
 void sysutil_activate_noblock(int fd)
 {
@@ -1262,7 +1275,10 @@ void sysutil_deamon()
         sysutil_exit(EXIT_SUCCESS);
     }
 
-    setsid();
+    if(setsid() < 0)
+    {
+        sysutil_exit(EXIT_FAILURE);
+    }
 
     if(sysutil_fork() > 0)
     {
@@ -1271,8 +1287,7 @@ void sysutil_deamon()
 
     if((fd = open("/dev/null",O_RDWR)) < 0)
     {
-        fprintf(STDERR_FILENO,"open file");
-        exit(EXIT_FAILURE);
+        sysutil_exit(EXIT_FAILURE);
     }
 
     sysutil_dupfd2(fd,STDIN_FILENO);
@@ -1281,8 +1296,12 @@ void sysutil_deamon()
 
     if(fd > 2)
     {
-        close(fd);
+        sysutil_close(fd);
+        sysutil_close(STDIN_FILENO);
+        sysutil_close(STDOUT_FILENO);
+        sysutil_close(STDERR_FILENO);
     }
+
     sysutil_chdir("/");
     sysutil_set_umask(0);
 }

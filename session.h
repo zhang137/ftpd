@@ -13,6 +13,8 @@ struct ftpd_session
   char* p_control_line_buf;
   int idle_timeout;
   int data_timeout;
+  int accept_timeout;
+  int connect_timeout;
 
   /* Details of the data connection */
   int pasv_listen_fd;
