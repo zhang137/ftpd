@@ -5,7 +5,5 @@
 #include "sysutil.h"
 
 
-void initialize_ftpd_socket(struct ftpd_session *sessin);
-
 
 #endif // PRELOGIN_H_INCLUDED

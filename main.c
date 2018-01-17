@@ -5,17 +5,11 @@
 #include "session.h"
 #include "twoprocess.h"
 #include "sysutil.h"
-#include "prelogin.h"
-#include "str.h"
-#include "strlist.h"
-#include <fcntl.h>
+#include "twoprocess.h"
 
 
 int main()
 {
-    pid_t pid;
-    int fd,fd2;
-    char str[10] = "";
     struct ftpd_session session;
     session.accept_timeout = 20;
     session.connect_timeout = 30;
@@ -24,7 +18,6 @@ int main()
     session.is_anonymous = 0;
 
     sysutil_deamon();
-    initialize_ftpd_socket(&session);
-
+    twoprogress(&session);
     return 0;
 }

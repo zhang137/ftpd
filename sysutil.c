@@ -504,9 +504,9 @@ int sysutil_fork(void)
 int sysutil_fork_failok(void)
 {
     pid_t pid;
-    if((pid = sysutil_fork()) > 0)
+    if((pid = sysutil_fork()) < 0)
     {
-        sysutil_exit(EXIT_SUCCESS);
+        sysutil_exit(EXIT_FAILURE);
     }
     return pid;
 }
@@ -846,7 +846,7 @@ void sysutil_getpeername(int fd, struct sysutil_sockaddr** p_sockptr)
 int sysutil_accept_timeout(int fd, struct sysutil_sockaddr* p_sockaddr,
                                unsigned int wait_seconds)
 {
-    int clientfd,res;
+    int clientfd,res,error;
     struct timeval tv;
     tv.tv_sec = wait_seconds; //sec = 0 ?
     tv.tv_usec = 0;
@@ -872,8 +872,7 @@ int sysutil_accept_timeout(int fd, struct sysutil_sockaddr* p_sockaddr,
         }
         else if(FD_ISSET(fd,&rfdset) && FD_ISSET(fd,&wfdset))
         {
-            int error;
-            if(!setsockopt(fd,SOL_SOCKET,SO_ERROR,&error,sizeof(int)))
+            if(!getsockopt(fd,SOL_SOCKET,SO_ERROR,&error,sizeof(int)))
             {
                 saved_errno = error;
             }
@@ -917,7 +916,7 @@ int sysutil_connect_timeout(int fd,
         else if(FD_ISSET(fd,&rfdset) && FD_ISSET(fd,&wfdset))
         {
             int error;
-            if(!setsockopt(fd,SOL_SOCKET,SO_ERROR,&error,sizeof(int)))
+            if(!getsockopt(fd,SOL_SOCKET,SO_ERROR,&error,sizeof(int)))
             {
                 saved_errno = error;
             }
@@ -971,18 +970,18 @@ void sysutil_activate_oobinline(int fd)
 void sysutil_activate_linger(int fd)
 {
     struct linger st_linger;
-    st_linger.l_onoff = 0;
+    st_linger.l_onoff = 1;
     st_linger.l_linger = 0;
     if(setsockopt(fd,SOL_SOCKET,SO_LINGER,&st_linger,sizeof(st_linger)) < 0)
         ;//die("setsockopt");
 }
 void sysutil_deactivate_linger_failok(int fd)
 {
-//    struct linger st_linger;
-//    st_linger.l_onoff = 0;
-//    st_linger.l_linger = 0;
-//    if(setsockopt(fd,SOL_SOCKET,SO_DONTLINGER,&st_linger,sizeof(st_linger)) < 0)
-//        ;//die("setsockopt");
+    struct linger st_linger;
+    st_linger.l_onoff = 0;
+    st_linger.l_linger = 0;
+    if(setsockopt(fd,SOL_SOCKET,SO_DONTLINGER,&st_linger,sizeof(st_linger)) < 0)
+        ;//die("setsockopt");
 }
 void sysutil_activate_noblock(int fd)
 {

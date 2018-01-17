@@ -6,7 +6,7 @@ enum
     RECV_CMD_FD = 0x01,
     SEND_CMD_FD = 0x02,
 
-    FTP_CLIENT_IS_ANOUTMOUS = 0x10,
+    FTP_ANOUYMOUS = 0x10,
 
 
 };
