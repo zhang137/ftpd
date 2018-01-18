@@ -1,6 +1,10 @@
 #ifndef COMMONCODE_H_INCLUDED
 #define COMMONCODE_H_INCLUDED
 
+
+uint16_t FTPD_CMDPORT 20;
+
+
 enum
 {
     RECV_CMD_FD = 0x01,

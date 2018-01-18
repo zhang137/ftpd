@@ -6,7 +6,7 @@
 
 void twoprogress(struct ftpd_session *session);
 int wait_client_connect(struct session *session);
-int initialize_ftpd_listen_socket();
+int initialize_ftpd_socket(struct sysutil_sockaddr *listen_addr);
 
 
 
