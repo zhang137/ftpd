@@ -2,7 +2,9 @@
 #define PRELOGIN_H_INCLUDED
 
 #include "session.h"
-#include "sysutil.h"
+
+void handle_prelogin(struct ftpd_session *session);
+
 
 
 

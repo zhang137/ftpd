@@ -46,25 +46,32 @@ void sysutil_install_sighandler(const enum EVSFSysUtilSignal sig,
 void sysutil_install_async_sighandler(const enum EVSFSysUtilSignal sig,
                                           async_sighandle_t handler)
 {
+
 }
 void sysutil_default_sig(const enum EVSFSysUtilSignal sig)
 {
+
 }
 void sysutil_install_io_handler(context_io_t handler, void* p_private)
 {
+
 }
 void sysutil_uninstall_io_handler(void)
 {
+
 }
 void sysutil_check_pending_actions(
   const enum EVSFSysUtilInterruptContext context, int retval, int fd)
 {
+
 }
 void sysutil_block_sig(const enum EVSFSysUtilSignal sig)
 {
+
 }
 void sysutil_unblock_sig(const enum EVSFSysUtilSignal sig)
 {
+
 }
 
 /* Alarm setting/clearing utility functions */
@@ -459,7 +466,12 @@ void* sysutil_malloc(unsigned int size)
 
     ptr = malloc(size);
     if(ptr == NULL)
-        ;//die("malloc error");
+    {
+        sysutil_syslog("malloc",LOG_ERR);
+        sysutil_exit(EXIT_FAILURE);
+        //die("malloc error");
+    }
+
 
     return ptr;
 }
@@ -506,6 +518,7 @@ int sysutil_fork_failok(void)
     pid_t pid;
     if((pid = sysutil_fork()) < 0)
     {
+        sysutil_syslog("fork error",LOG_ERR | LOG_USER);
         sysutil_exit(EXIT_FAILURE);
     }
     return pid;
@@ -661,26 +674,22 @@ void sysutil_sockaddr_clear(struct sysutil_sockaddr** p_sockptr)
 void sysutil_sockaddr_alloc_ipv4(struct sysutil_sockaddr** p_sockptr)
 {
     struct sysutil_sockaddr *tmp_addr;
-    struct sockaddr_in saddr_in;
-    saddr_in.sin_family = AF_INET;
 
     tmp_addr = (struct sysutil_sockaddr *)sysutil_malloc(sizeof(struct sysutil_sockaddr));
     sysutil_sockaddr_clear(&tmp_addr);
+    tmp_addr->u.u_sockaddr_in.sin_family = AF_INET;
 
-    tmp_addr->u.u_sockaddr_in = saddr_in;
     *p_sockptr = tmp_addr;
 
 }
 void sysutil_sockaddr_alloc_ipv6(struct sysutil_sockaddr** p_sockptr)
 {
     struct sysutil_sockaddr *tmp_addr;
-    struct sockaddr_in6 saddr_in6;
 
-    saddr_in6.sin6_family = AF_INET6;
     tmp_addr = (struct sysutil_sockaddr *)sysutil_malloc(sizeof(struct sysutil_sockaddr));
     sysutil_sockaddr_clear(&tmp_addr);
+    tmp_addr->u.u_sockaddr_in6.sin6_family = AF_INET6;
 
-    tmp_addr->u.u_sockaddr_in6 = saddr_in6;
     *p_sockptr = tmp_addr;
 }
 void sysutil_sockaddr_clone (struct sysutil_sockaddr** p_sockptr,
@@ -710,12 +719,20 @@ void sysutil_sockaddr_set_ipv6addr(struct sysutil_sockaddr* p_sockptr,
 }
 void sysutil_sockaddr_set_any(struct sysutil_sockaddr* p_sockaddr)
 {
-    sysutil_inet_aton(INADDR_ANY,p_sockaddr);
+    if(p_sockaddr->u.u_sockaddr_in.sin_family == AF_INET)
+        p_sockaddr->u.u_sockaddr_in.sin_addr.s_addr = htonl(INADDR_ANY);
+    else if(p_sockaddr->u.u_sockaddr_in6.sin6_family == AF_INET6)
+        inet_pton(AF_INET6,&p_sockaddr->u.u_sockaddr_in6.sin6_addr,htonl(INADDR_ANY));
 }
-unsigned short sysutil_sockaddr_get_port(
-    const struct sysutil_sockaddr* p_sockptr)
+unsigned short sysutil_sockaddr_get_port (const struct
+                                          sysutil_sockaddr* p_sockptr)
 {
-    return 0;
+    unsigned short port;
+    if(p_sockptr->u.u_sockaddr_in.sin_family == AF_INET)
+        port = ntohs(p_sockptr->u.u_sockaddr_in.sin_port);
+    else if(p_sockptr->u.u_sockaddr_in6.sin6_family == AF_INET6)
+        port = ntohs(p_sockptr->u.u_sockaddr_in6.sin6_port);
+    return port;
 }
 void sysutil_sockaddr_set_port(struct sysutil_sockaddr* p_sockptr,
                                    unsigned short the_port)
@@ -771,6 +788,7 @@ int sysutil_get_ipv4_sock(void)
     int fd;
     if((fd = socket(AF_INET,SOCK_STREAM,IPPROTO_TCP)) < 0)
     {
+        sysutil_syslog("set socket",LOG_ERR);
         sysutil_exit(EXIT_FAILURE);
     }
     return fd;
@@ -801,6 +819,7 @@ int sysutil_bind(int fd, const struct sysutil_sockaddr* p_sockptr)
     {
         if(bind(fd,(struct sockaddr *)&p_sockptr->u.u_sockaddr_in,sizeof(struct sockaddr_in)) < 0)
         {
+            sysutil_syslog("bind",LOG_ERR);
             return -1;
         }
     }
@@ -808,6 +827,7 @@ int sysutil_bind(int fd, const struct sysutil_sockaddr* p_sockptr)
     {
         if(bind(fd,(struct sockaddr *)&p_sockptr->u.u_sockaddr_in,sizeof(struct sockaddr_in6)) < 0)
         {
+            sysutil_syslog("bind",LOG_ERR| LOG_USER);
             return -1;
         }
     }
@@ -816,7 +836,10 @@ int sysutil_bind(int fd, const struct sysutil_sockaddr* p_sockptr)
 int sysutil_listen(int fd, const unsigned int backlog)
 {
     if(listen(fd,backlog) < 0)
-        return -1;
+    {
+        sysutil_syslog("listen",LOG_ERR| LOG_USER);
+         return -1;
+    }
     return 0;
 }
 void sysutil_getsockname(int fd, struct sysutil_sockaddr** p_sockptr)
@@ -860,22 +883,24 @@ int sysutil_accept_timeout(int fd, struct sysutil_sockaddr* p_sockaddr,
     FD_SET(fd,&wfdset);
 
     res = select(fd+1,&rfdset,&wfdset,NULL,&tv);
+    if(res  == 0)
+    {
+        sysutil_syslog("timeout",LOG_INFO | LOG_USER);
+        return 0;
+    }
+
     if(res > 0)
     {
-        if(FD_ISSET(fd,&rfdset) && !FD_ISSET(fd,&wfdset))
+        if(FD_ISSET(fd,&rfdset))
         {
-            clientfd = accept(fd,(struct sockaddr*)&p_sockaddr->u.u_sockaddr_in,sizeof(struct sockaddr));
-            if(clientfd > 0)
+            while ((clientfd = accept(fd,(struct sockaddr*)&(p_sockaddr->u.u_sockaddr_in.sin_addr),
+                                     sizeof(struct sockaddr))) < 0 )
             {
-                return clientfd;
+                if(errno & EWOULDBLOCK || errno & EAGAIN)
+                    continue;
             }
-        }
-        else if(FD_ISSET(fd,&rfdset) && FD_ISSET(fd,&wfdset))
-        {
-            if(!getsockopt(fd,SOL_SOCKET,SO_ERROR,&error,sizeof(int)))
-            {
-                saved_errno = error;
-            }
+            sysutil_syslog("connect successed",LOG_INFO | LOG_USER);
+            return clientfd;
         }
     }
 
@@ -885,7 +910,7 @@ int sysutil_connect_timeout(int fd,
                                 const struct sysutil_sockaddr* p_sockaddr,
                                 unsigned int wait_seconds)
 {
-    int res;
+    int res,error;
     struct timeval tv;
     gettimeofday(&tv,NULL);
     res = connect(fd,(struct sockaddr*)&p_sockaddr->u.u_sockaddr_in,sizeof(struct sockaddr));
@@ -915,14 +940,12 @@ int sysutil_connect_timeout(int fd,
             return 0;
         else if(FD_ISSET(fd,&rfdset) && FD_ISSET(fd,&wfdset))
         {
-            int error;
             if(!getsockopt(fd,SOL_SOCKET,SO_ERROR,&error,sizeof(int)))
             {
                 saved_errno = error;
             }
         }
     }
-
     return -1;
 }
 void sysutil_dns_resolve(struct sysutil_sockaddr** p_sockptr,
@@ -948,7 +971,11 @@ void sysutil_activate_reuseaddr(int fd)
 {
     int raddr;
     if(setsockopt(fd,SOL_SOCKET,SO_REUSEADDR,&raddr,sizeof(int)) < 0)
-        ;//die("setsockopt REUSEADDR");
+    {
+        sysutil_close(fd);//die("setsockopt REUSEADDR");
+        sysutil_exit(EXIT_FAILURE);
+    }
+
 }
 void sysutil_set_nodelay(int fd)
 {
@@ -980,7 +1007,7 @@ void sysutil_deactivate_linger_failok(int fd)
     struct linger st_linger;
     st_linger.l_onoff = 0;
     st_linger.l_linger = 0;
-    if(setsockopt(fd,SOL_SOCKET,SO_DONTLINGER,&st_linger,sizeof(st_linger)) < 0)
+    if(setsockopt(fd,SOL_SOCKET,SO_LINGER,&st_linger,sizeof(st_linger)) < 0)
         ;//die("setsockopt");
 }
 void sysutil_activate_noblock(int fd)
@@ -1139,7 +1166,7 @@ int sysutil_getuid(void)
 /* Syslogging (bah) */
 void sysutil_openlog(int force)
 {
-    openlog("ftpd",LOG_PID,force);
+    openlog("ftpd",LOG_PID | LOG_CONS,force);
 }
 void sysutil_syslog(const char* p_text, int severe)
 {
