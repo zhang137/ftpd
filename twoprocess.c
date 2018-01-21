@@ -6,7 +6,6 @@
 #include "prelogin.h"
 
 
-
 void twoprogress(struct ftpd_session *session)
 {
     int client_fd;
@@ -17,7 +16,8 @@ void twoprogress(struct ftpd_session *session)
     session->child_fd = sockpair.socket_one;
     session->parent_fd = sockpair.socket_two;
 
-    sysutil_setuid_numeric(0);
+    sysutil_setuid_numeric(65534);
+    sysutil_setgid_numeric(65534);
 
     handle_prelogin(session);
     //session->
@@ -35,7 +35,6 @@ void set_ftp_sockopt(int fd)
 int initialize_ftpd_socket(struct sysutil_sockaddr *listen_addr)
 {
     int listen_fd;
-    char str[100];
     listen_fd = sysutil_get_ipv4_sock();
 
     sysutil_activate_reuseaddr(listen_fd);

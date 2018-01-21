@@ -870,11 +870,14 @@ int sysutil_accept_timeout(int fd, struct sysutil_sockaddr* p_sockaddr,
                                unsigned int wait_seconds)
 {
     int clientfd,res,error;
+    socklen_t saddr_len;
     struct timeval tv;
-    tv.tv_sec = wait_seconds; //sec = 0 ?
-    tv.tv_usec = 0;
     fd_set rfdset;
     fd_set wfdset;
+
+    saddr_len = sizeof(struct sockaddr_in);
+    tv.tv_sec = wait_seconds; //sec = 0 ?
+    tv.tv_usec = 0;
 
     FD_ZERO(&rfdset);
     FD_ZERO(&wfdset);
@@ -882,6 +885,7 @@ int sysutil_accept_timeout(int fd, struct sysutil_sockaddr* p_sockaddr,
     FD_SET(fd,&rfdset);
     FD_SET(fd,&wfdset);
 
+    sysutil_syslog("start accept",LOG_INFO | LOG_USER);
     res = select(fd+1,&rfdset,&wfdset,NULL,&tv);
     if(res  == 0)
     {
@@ -891,10 +895,11 @@ int sysutil_accept_timeout(int fd, struct sysutil_sockaddr* p_sockaddr,
 
     if(res > 0)
     {
-        if(FD_ISSET(fd,&rfdset))
+        sysutil_syslog("accept",LOG_INFO | LOG_USER);
+        if(FD_ISSET(fd,&rfdset) & !FD_ISSET(fd,&wfdset))
         {
-            while ((clientfd = accept(fd,(struct sockaddr*)&(p_sockaddr->u.u_sockaddr_in.sin_addr),
-                                     sizeof(struct sockaddr))) < 0 )
+            while ((clientfd = accept(fd,(struct sockaddr*)&(p_sockaddr->u.u_sockaddr_in.sin_addr)
+                                         ,&saddr_len)) < 0 )
             {
                 if(errno & EWOULDBLOCK || errno & EAGAIN)
                     continue;

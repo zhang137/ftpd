@@ -1,24 +1,25 @@
 # depslib dependency file v1.0
-1514728572 source:/home/zyy/ftp/ftp/ftpcmd.c
+1516411633 source:/home/zyy/ftp/ftp/ftpcmd.c
 	"ftpcmd.h"
 
 1514800126 /home/zyy/ftp/ftp/ftpcmd.h
 
-1515925989 source:/home/zyy/ftp/ftp/main.c
+1516411633 source:/home/zyy/ftp/ftp/main.c
 	<stdio.h>
 	<stdlib.h>
+	<unistd.h>
+	<syslog.h>
 	"session.h"
 	"twoprocess.h"
 	"sysutil.h"
-	"str.h"
-	<errno.h>
+	"twoprocess.h"
 
-1514904473 /home/zyy/ftp/ftp/session.h
+1516278475 /home/zyy/ftp/ftp/session.h
 	"filesize.h"
 	"sysutil.h"
 	"strlist.h"
 
-1515599124 /home/zyy/ftp/ftp/sysutil.h
+1516278475 /home/zyy/ftp/ftp/sysutil.h
 	<netinet/in.h>
 	<sys/stat.h>
 	<dirent.h>
@@ -26,7 +27,7 @@
 	<grp.h>
 	"filesize.h"
 
-1514812287 /home/zyy/ftp/ftp/strlist.h
+1516278475 /home/zyy/ftp/ftp/strlist.h
 	<netinet/in.h>
 	"str.h"
 
@@ -39,7 +40,7 @@
 	"str.h"
 	"sysutil.h"
 
-1515593619 source:/home/zyy/ftp/ftp/strlist.c
+1516278475 source:/home/zyy/ftp/ftp/strlist.c
 	<stdlib.h>
 	"strlist.h"
 
@@ -139,19 +140,20 @@
 	<grp.h>
 	<pwd.h>
 
-1515925022 source:/home/zyy/ftp/ftp/controlprocess.c
+1516278475 source:/home/zyy/ftp/ftp/controlprocess.c
 	"controlprocess.h"
 
-1515925040 /home/zyy/ftp/ftp/controlprocess.h
+1516278475 /home/zyy/ftp/ftp/controlprocess.h
 
-1515925010 source:/home/zyy/ftp/ftp/dataprocess.c
+1516278475 source:/home/zyy/ftp/ftp/dataprocess.c
 	"dataprocess.h"
 
-1515925047 /home/zyy/ftp/ftp/dataprocess.h
+1516278475 /home/zyy/ftp/ftp/dataprocess.h
 
-1515925043 /home/zyy/ftp/ftp/twoprocess.h
+1516411633 /home/zyy/ftp/ftp/twoprocess.h
+	"session.h"
 
-1515924688 source:/home/zyy/ftp/ftp/sysutil.c
+1516413042 source:/home/zyy/ftp/ftp/sysutil.c
 	<stdio.h>
 	<stdlib.h>
 	<sys/types.h>
@@ -166,7 +168,6 @@
 	<sys/time.h>
 	<utime.h>
 	<sys/un.h>
-	<sys/un.h>
 	<syslog.h>
 	<string.h>
 	<limits.h>
@@ -179,8 +180,13 @@
 	<errno.h>
 	"sysutil.h"
 
-1515925032 source:/home/zyy/ftp/ftp/twoprocess.c
+1516417708 source:/home/zyy/ftp/ftp/twoprocess.c
+	<stdlib.h>
+	<errno.h>
+	<syslog.h>
 	"twoprocess.h"
+	"sysutil.h"
+	"prelogin.h"
 
 1516157670 source:/home/usr/projects/ftp/ftpd/controlprocess.c
 	"controlprocess.h"
@@ -207,5 +213,11 @@
 	"prelogin.h"
 
 1516333548 /home/usr/projects/ftp/ftpd/prelogin.h
+	"session.h"
+
+1516411633 source:/home/zyy/ftp/ftp/prelogin.c
+	"prelogin.h"
+
+1516411633 /home/zyy/ftp/ftp/prelogin.h
 	"session.h"
 
