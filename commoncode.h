@@ -4,7 +4,7 @@
 
 uint16_t FTPD_CMDPORT 20;
 
-
+const char *trunable_nobody = "nobody";
 enum
 {
     RECV_CMD_FD = 0x01,

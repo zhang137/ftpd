@@ -11,5 +11,4 @@ void load_default_config();
 
 void util_client_dup2(int fd);
 
-
 #endif // UTIL_H_INCLUDED

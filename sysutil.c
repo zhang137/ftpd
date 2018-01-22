@@ -186,15 +186,23 @@ void sysutil_dupfd2(int old_fd, int new_fd)
 }
 void sysutil_close(int fd)
 {
-    if(sysutil_close_failok(fd))
+    int res;
+    res = sysutil_close_failok(fd))
+    if(res < 0)
     {
-        ;//die("")
+        die("close");
     }
 }
 
 int sysutil_close_failok(int fd)
 {
-    return close(fd);
+    int retval;
+    while((retval = close(fd)) < 0)
+    {
+        if(errno == EINTR)
+            continue;
+    }
+    return retval;
 }
 
 int sysutil_unlink(const char* p_dead)
@@ -218,7 +226,7 @@ void sysutil_lseek_to(const int fd, filesize_t seek_pos)
     int res;
     if((res = lseek(fd,SEEK_SET,seek_pos))< 0)
     {
-
+        die("lseek");
     }
 }
 void sysutil_lseek_end(const int fd)
@@ -226,7 +234,9 @@ void sysutil_lseek_end(const int fd)
     int res;
     res = lseek(fd,SEEK_END,0);
     if(res < 0)
-        ;//die("lseek");
+    {
+       die("lseek");
+    }
 }
 
 filesize_t sysutil_get_file_offset(const int file_fd)
@@ -530,17 +540,17 @@ int sysutil_fork(void)
     pid = fork();
     if(pid < 0)
     {
-        sysutil_exit(EXIT_FAILURE);
+        die("fork");
     }
     return pid;
 }
 int sysutil_fork_failok(void)
 {
     pid_t pid;
-    if((pid = sysutil_fork()) < 0)
+    pid = sysutil_fork();
+    if(!pid)
     {
-        sysutil_syslog("fork error",LOG_ERR | LOG_USER);
-        sysutil_exit(EXIT_FAILURE);
+        sysutil_post_fork();
     }
     return pid;
 }
@@ -554,7 +564,6 @@ struct sysutil_wait_retval sysutil_wait(void)
     struct sysutil_wait_retval ret;
 
     //ret.
-
 
     return ret;
 }
@@ -585,7 +594,6 @@ int sysutil_wait_get_exitcode(
 {
     return 0;
 }
-
 
 /* Various string functions */
 unsigned int sysutil_strlen(const char* p_text)

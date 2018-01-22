@@ -1,8 +1,8 @@
 #include "prelogin.h"
+#include "sysutil.h"
 
-void handle_prelogin(struct ftpd_session *session)
+void progress_credentials(struct mystr *user)
 {
-    while(1) ;
-}
 
+}
 

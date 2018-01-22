@@ -23,10 +23,11 @@ int main()
     session.is_anonymous = 0;
 
     standalone_socket(&session);
-
     sysutil_openlog(LOG_DAEMON);
-
     twoprogress(&session);
+
+
+
 
     return 0;
 }

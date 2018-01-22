@@ -1,10 +1,9 @@
 #ifndef PRELOGIN_H_INCLUDED
 #define PRELOGIN_H_INCLUDED
 
-#include "session.h"
+#include "sysutil.h"
 
-void handle_prelogin(struct ftpd_session *session);
-
+void progress_credentials(struct mystr *user)
 
 
 

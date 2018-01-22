@@ -6,10 +6,11 @@
 
 void twoprogress(struct ftpd_session *session);
 
-void util_close_parent_context(int fd);
+void util_close_parent_context(struct ftpd_session *session);
 
-void util_close_child_context(int fd);
+void util_close_child_context(struct ftpd_session *session);
 
+void delall_privilege();
 
 
 #endif // TWOPROCESS_H_INCLUDED
