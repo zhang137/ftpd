@@ -15,6 +15,8 @@
 
 int saved_errno;
 
+void die(const char *exit_str);
+
 struct sysutil_sockaddr
 {
   union
@@ -366,6 +368,7 @@ void sysutil_set_address_space_limit(unsigned long bytes);
 void sysutil_set_no_fds();
 void sysutil_set_no_procs();
 
-void sysutil_deamon();
+void sysutil_set_sockopt(int fd);
+
 
 #endif // SYSUTIL_H_INCLUDED

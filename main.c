@@ -1,10 +1,9 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <syslog.h>
 #include "session.h"
-#include "twoprocess.h"
 #include "sysutil.h"
+
+//#include "util.h"
 #include "twoprocess.h"
 
 
@@ -19,13 +18,11 @@ int main()
         INIT_MYSTR, 0
     };
 
-    session.accept_timeout = 20;
-    session.connect_timeout = 30;
     session.idle_timeout = 20;
     session.data_timeout = 30;
     session.is_anonymous = 0;
 
-    sysutil_deamon();
+    standalone_socket(&session);
 
     sysutil_openlog(LOG_DAEMON);
 

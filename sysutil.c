@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <sys/signal.h>
 #include <sys/select.h>
+#include <sys/resource.h>
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
 #include <netinet/ip6.h>
@@ -25,8 +26,17 @@
 
 #include "sysutil.h"
 
+
+void die(const char *exit_str)
+{
+    sysutil_exit(EXIT_FAILURE);
+}
+
+
 int sysutil_retval_is_error(int retval)
 {
+    if(retval < 0)
+        return 1;
     return 0;
 }
 
@@ -133,15 +143,26 @@ const char* sysutil_next_dirent(struct sysutil_dir* p_dir)
 int sysutil_open_file(const char* p_filename,
                           const enum EVSFSysUtilOpenMode mode)
 {
-    int fd;
-    if(mode & kVSFSysUtilOpenReadOnly) {
-        fd = open(p_filename,O_NONBLOCK|O_RDONLY);
-    }else if(mode & kVSFSysUtilOpenWriteOnly){
-        fd = open(p_filename,O_NONBLOCK|O_WRONLY);
-    }else {
-        fd = open(p_filename,O_NONBLOCK|O_RDWR);
+    int retval = 0;
+
+    switch(mode)
+    {
+    case kVSFSysUtilOpenReadOnly:
+        retval = open(p_filename,O_NONBLOCK|O_WRONLY);
+    case kVSFSysUtilOpenWriteOnly:
+        retval = open(p_filename,O_NONBLOCK|O_WRONLY);
+    case kVSFSysUtilOpenReadWrite:
+        retval = open(p_filename,O_NONBLOCK|O_WRONLY);
+    default:
+        break;
+    };
+
+    if(retval < 0)
+    {
+        die("open error");
     }
-    return fd;
+
+    return retval;
 }
 /* Fails if file already exists */
 int sysutil_create_file_exclusive(const char* p_filename)
@@ -659,38 +680,27 @@ int sysutil_isdigit(int the_char)
 
 void sysutil_sockaddr_alloc(struct sysutil_sockaddr** p_sockptr)
 {
-
-    struct sysutil_sockaddr *tmp_addr;
-
-    tmp_addr = (struct sysutil_sockaddr *)sysutil_malloc(sizeof(struct sysutil_sockaddr));
-    sysutil_sockaddr_clear(&tmp_addr);
-
-    *p_sockptr = tmp_addr;
+    sysutil_sockaddr_clear(p_sockptr);
+    *p_sockptr = (struct sysutil_sockaddr *)sysutil_malloc(sizeof(**p_sockptr));
+    sysutil_memclr(*p_sockptr,sizeof(**p_sockptr));
 }
 void sysutil_sockaddr_clear(struct sysutil_sockaddr** p_sockptr)
 {
-    sysutil_memclr(*p_sockptr,sizeof(*p_sockptr));
+    if(*p_sockptr != NULL)
+    {
+        sysutil_free(*p_sockptr);
+        *p_sockptr = NULL;
+    }
 }
 void sysutil_sockaddr_alloc_ipv4(struct sysutil_sockaddr** p_sockptr)
 {
-    struct sysutil_sockaddr *tmp_addr;
-
-    tmp_addr = (struct sysutil_sockaddr *)sysutil_malloc(sizeof(struct sysutil_sockaddr));
-    sysutil_sockaddr_clear(&tmp_addr);
-    tmp_addr->u.u_sockaddr_in.sin_family = AF_INET;
-
-    *p_sockptr = tmp_addr;
-
+    sysutil_sockaddr_alloc(p_sockptr);
+    (*p_sockptr)->u.u_sockaddr.sa_family = AF_INET;
 }
 void sysutil_sockaddr_alloc_ipv6(struct sysutil_sockaddr** p_sockptr)
 {
-    struct sysutil_sockaddr *tmp_addr;
-
-    tmp_addr = (struct sysutil_sockaddr *)sysutil_malloc(sizeof(struct sysutil_sockaddr));
-    sysutil_sockaddr_clear(&tmp_addr);
-    tmp_addr->u.u_sockaddr_in6.sin6_family = AF_INET6;
-
-    *p_sockptr = tmp_addr;
+    sysutil_sockaddr_alloc(p_sockptr);
+    (*p_sockptr)->u.u_sockaddr.sa_family = AF_INET6;
 }
 void sysutil_sockaddr_clone (struct sysutil_sockaddr** p_sockptr,
                                     const struct sysutil_sockaddr* p_src)
@@ -845,13 +855,14 @@ int sysutil_listen(int fd, const unsigned int backlog)
 void sysutil_getsockname(int fd, struct sysutil_sockaddr** p_sockptr)
 {
     struct sysutil_sockaddr *ptr = *p_sockptr;
+    socklen_t sock_len = sizeof(struct sockaddr_in);
     if(ptr->u.u_sockaddr_in.sin_family == AF_INET)
     {
-
+        getsockname(fd,(struct sockaddr*)&ptr->u.u_sockaddr_in,&sock_len);
     }
     else if(ptr->u.u_sockaddr_in6.sin6_family == AF_INET6)
     {
-
+        getsockname(fd,(struct sockaddr*)&ptr->u.u_sockaddr_in6,&sock_len);
     }
 }
 void sysutil_getpeername(int fd, struct sysutil_sockaddr** p_sockptr)
@@ -869,47 +880,64 @@ void sysutil_getpeername(int fd, struct sysutil_sockaddr** p_sockptr)
 int sysutil_accept_timeout(int fd, struct sysutil_sockaddr* p_sockaddr,
                                unsigned int wait_seconds)
 {
-    int clientfd,res,error;
-    socklen_t saddr_len;
-    struct timeval tv;
-    fd_set rfdset;
-    fd_set wfdset;
+    struct sysutil_sockaddr remote_addr;
+    int retval,saved_errno;
+    socklen_t socklen = sizeof(remote_addr);
 
-    saddr_len = sizeof(struct sockaddr_in);
-    tv.tv_sec = wait_seconds; //sec = 0 ?
-    tv.tv_usec = 0;
-
-    FD_ZERO(&rfdset);
-    FD_ZERO(&wfdset);
-
-    FD_SET(fd,&rfdset);
-    FD_SET(fd,&wfdset);
-
-    sysutil_syslog("start accept",LOG_INFO | LOG_USER);
-    res = select(fd+1,&rfdset,&wfdset,NULL,&tv);
-    if(res  == 0)
+    if(wait_seconds > 0)
     {
-        sysutil_syslog("timeout",LOG_INFO | LOG_USER);
-        return 0;
-    }
+        struct timeval tv;
+        fd_set rfdset;
+        fd_set wfdset;
 
-    if(res > 0)
-    {
-        sysutil_syslog("accept",LOG_INFO | LOG_USER);
-        if(FD_ISSET(fd,&rfdset) & !FD_ISSET(fd,&wfdset))
+        tv.tv_sec = wait_seconds; //sec = 0 ?
+        tv.tv_usec = 0;
+
+        FD_ZERO(&rfdset);
+        FD_ZERO(&wfdset);
+
+        FD_SET(fd,&rfdset);
+        FD_SET(fd,&wfdset);
+
+        do{
+            retval = select(fd+1,&rfdset,&wfdset,NULL,&tv);
+            saved_errno = errno;
+        }while(retval < 0 && saved_errno == EINTR);
+
+        if(retval <= 0)
         {
-            while ((clientfd = accept(fd,(struct sockaddr*)&(p_sockaddr->u.u_sockaddr_in.sin_addr)
-                                         ,&saddr_len)) < 0 )
-            {
-                if(errno & EWOULDBLOCK || errno & EAGAIN)
-                    continue;
-            }
-            sysutil_syslog("connect successed",LOG_INFO | LOG_USER);
-            return clientfd;
+            if(retval == 0)
+                errno = EAGAIN;
+            return -1;
         }
     }
+    retval = accept(fd, &remote_addr.u.u_sockaddr, &socklen);
+    if (retval < 0)
+    {
+        return retval;retval = accept(fd, &remote_addr.u.u_sockaddr, &socklen);
+    }
 
-    return -1;
+    if(remote_addr.u.u_sockaddr.sa_family != AF_INET &&
+          remote_addr.u.u_sockaddr.sa_family != AF_INET6)
+    {
+        die("can only support ipv4 and ipv6 currently");
+    }
+    if (p_sockaddr)
+    {
+        if (remote_addr.u.u_sockaddr.sa_family == AF_INET)
+        {
+            sysutil_memclr(&remote_addr.u.u_sockaddr_in.sin_zero,
+                             sizeof(remote_addr.u.u_sockaddr_in.sin_zero));
+            sysutil_memcpy(p_sockaddr, &remote_addr.u.u_sockaddr_in,
+                             sizeof(remote_addr.u.u_sockaddr_in));
+        }
+        else
+        {
+            sysutil_memcpy(p_sockaddr, &remote_addr.u.u_sockaddr_in6,
+                             sizeof(remote_addr.u.u_sockaddr_in6));
+        }
+    }
+    return retval;
 }
 int sysutil_connect_timeout(int fd,
                                 const struct sysutil_sockaddr* p_sockaddr,
@@ -918,7 +946,7 @@ int sysutil_connect_timeout(int fd,
     int res,error;
     struct timeval tv;
     gettimeofday(&tv,NULL);
-    res = connect(fd,(struct sockaddr*)&p_sockaddr->u.u_sockaddr_in,sizeof(struct sockaddr));
+    res = connect(fd,&p_sockaddr->u.u_sockaddr,sizeof(*p_sockaddr));
     if(res < 0)
     {
        if (errno != EINPROGRESS)
@@ -1290,32 +1318,43 @@ void sysutil_set_address_space_limit(unsigned long bytes)
 }
 void sysutil_set_no_fds()
 {
+    int res;
+    struct rlimit limit;
+    limit.rlim_cur = 0;
+    limit.rlim_max = 0;
 
+    res = setrlimit(RLIMIT_NOFILE,&limit);
+    if(res < 0)
+    {
+        //die("setrlimit");
+    }
 }
 
 void sysutil_set_no_procs()
 {
+    int res;
+    struct rlimit limit;
+    limit.rlim_cur = 0;
+    limit.rlim_max = 0;
 
+    res = setrlimit(RLIMIT_NPROC,&limit);
+    if(res < 0)
+    {
+        //die("setrlimit");
+    }
 }
 
-void sysutil_deamon()
+void sysutil_set_sockopt(int fd)
+{
+    sysutil_set_nodelay(fd);
+    sysutil_activate_keepalive(fd);
+    sysutil_activate_oobinline(fd);
+    //sysutil_activate_linger(fd);
+}
+
+void sysutil_clear_fd()
 {
     int fd;
-    if(sysutil_fork() > 0)
-    {
-        sysutil_exit(EXIT_SUCCESS);
-    }
-
-    if(setsid() < 0)
-    {
-        sysutil_exit(EXIT_FAILURE);
-    }
-
-    if(sysutil_fork() > 0)
-    {
-        sysutil_exit(EXIT_SUCCESS);
-    }
-
     if((fd = open("/dev/null",O_RDWR)) < 0)
     {
         sysutil_exit(EXIT_FAILURE);
@@ -1328,14 +1367,10 @@ void sysutil_deamon()
     if(fd > 2)
     {
         sysutil_close(fd);
-        sysutil_close(STDIN_FILENO);
-        sysutil_close(STDOUT_FILENO);
-        sysutil_close(STDERR_FILENO);
     }
-
-    sysutil_chdir("/");
-    sysutil_set_umask(0);
 }
+
+
 
 
 

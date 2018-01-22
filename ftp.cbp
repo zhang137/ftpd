@@ -74,6 +74,10 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="twoprocess.h" />
+		<Unit filename="util.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="util.h" />
 		<Extensions>
 			<envvars />
 			<code_completion />

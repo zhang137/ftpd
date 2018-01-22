@@ -2,11 +2,13 @@
 #define TWOPROCESS_H_INCLUDED
 
 #include "session.h"
+#include "sysutil.h"
 
 void twoprogress(struct ftpd_session *session);
-int wait_client_connect(struct ftpd_session *session);
-int initialize_ftpd_socket(struct sysutil_sockaddr *listen_addr);
 
+void util_close_parent_context(int fd);
+
+void util_close_child_context(int fd);
 
 
 
