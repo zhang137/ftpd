@@ -59,6 +59,7 @@ typedef void (*async_sighandle_t)(int);
 typedef void (*context_io_t)(int, int, void*);
 
 enum EVSFSysUtilError sysutil_get_error(void);
+
 int  sysutil_retval_is_error(int retval);
 void sysutil_install_null_sighandler(const enum EVSFSysUtilSignal sig);
 void sysutil_install_sighandler(const enum EVSFSysUtilSignal,
@@ -70,8 +71,8 @@ void sysutil_install_async_sighandler(const enum EVSFSysUtilSignal sig,
 void sysutil_default_sig(const enum EVSFSysUtilSignal sig);
 void sysutil_install_io_handler(context_io_t handler, void* p_private);
 void sysutil_uninstall_io_handler(void);
-void sysutil_check_pending_actions(
-  const enum EVSFSysUtilInterruptContext context, int retval, int fd);
+void sysutil_check_pending_actions(const enum EVSFSysUtilInterruptContext
+                                   context, int retval, int fd);
 void sysutil_block_sig(const enum EVSFSysUtilSignal sig);
 void sysutil_unblock_sig(const enum EVSFSysUtilSignal sig);
 
@@ -89,7 +90,11 @@ int sysutil_rename(const char* p_from, const char* p_to);
 struct sysutil_dir;
 struct sysutil_dir* sysutil_opendir(const char* p_dirname);
 void   sysutil_closedir(struct sysutil_dir* p_dir);
+void   sysutil_rewinddir(struct sysutil_dir *p_dir);
 const char* sysutil_next_dirent(struct sysutil_dir* p_dir);
+
+
+
 
 /* File create/open/close etc. */
 enum EVSFSysUtilOpenMode

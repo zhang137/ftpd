@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <syslog.h>
+#include "commoncode.h"
 #include "twoprocess.h"
 #include "prelogin.h"
 
@@ -10,15 +11,18 @@ void twoprogress(struct ftpd_session *session)
     set_private_unix_socket(session);
 
     retval = sysutil_fork();
-    if(!retval)
+    if(retval)
     {
-        util_close_child_context(session);
-
+        close_child_context(session);
+        while(1)
+        {
+            wait_req();
+        }
     }
-    util_close_parent_context(session);
-
-
-    //session->
+    close_parent_context(session);
+    del_privilege();
+    init_connection();
+    //
 
 }
 
@@ -31,38 +35,38 @@ void set_private_unix_socket(struct ftpd_session *session)
     session->parent_fd = sockpair.socket_two;
 }
 
-void util_close_parent_context(struct ftpd_session *session)
+void close_parent_context(struct ftpd_session *session)
 {
     sysutil_close(session->parent_fd);
     session->parent_fd = -1;
 }
 
-void util_close_child_context(struct ftpd_session *session)
+void close_child_context(struct ftpd_session *session)
 {
     sysutil_close(session->child_fd);
     session->child_fd = -1;
 }
 
-void delall_privilege()
+void del_privilege()
 {
     int res;
-    int seved_uid,saved_gid;
-    struct mystr nobody = INIT_MYSTR;
+    int saved_uid,saved_gid;
+    struct mystr nobody;
     struct sysutil_user *passwd = NULL;
 
-    str_alloc_text(nobody,trunable_nobody);
-    passwd = sysutil_getpwnam(mystr->pbuf);
+    str_alloc_text(&nobody,tunable_nobody);
+    passwd = sysutil_getpwnam(str_getbuf(&nobody));
     if(!passwd)
     {
         str_free(&nobody);
         die("getpwname");
     }
 
-    res = setgroups(0,NULL);
-    if(res < 0)
-    {
-        die("setgroups");
-    }
+//    res = setgroups(0,NULL);
+//    if(res < 0)
+//    {
+//        die("setgroups");
+//    }
 
     saved_gid = sysutil_getuid();
     saved_uid = sysutil_getpid();
@@ -72,11 +76,11 @@ void delall_privilege()
 
     sysutil_chdir(passwd->pw_dir);
 
-    sysutil_chroot(".");
+    //sysutil_chroot(".");
 }
 
 
-
+void wait_req();
 
 
 

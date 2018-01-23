@@ -6,6 +6,8 @@
 
 void twoprogress(struct ftpd_session *session);
 
+void set_private_unix_socket(struct ftpd_session *session);
+
 void util_close_parent_context(struct ftpd_session *session);
 
 void util_close_child_context(struct ftpd_session *session);

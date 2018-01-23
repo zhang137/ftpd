@@ -4,25 +4,36 @@
 void private_str_alloc_memchunk(struct mystr* p_str, const char* p_src,
                                 unsigned int len)
 {
-    p_str->pbuf = sysutil_malloc(len);
+    p_str->pbuf = (char *)sysutil_malloc(len);
     p_str->alloc_bytes = len;
-    p_str->num_len = len;
+    p_str->num_len = 0;
 
-    sysutil_memcpy(p_str->pbuf,p_src,len);
+    sysutil_memclr(p_str->pbuf,len);
+    if(p_src != NULL && (p_str->num_len = sysutil_strlen(p_src)))
+    {
+        sysutil_memcpy(p_str->pbuf,p_src,p_str->num_len);
+    }
 }
+
 void str_alloc_text(struct mystr* p_str, const char* p_src)
 {
+    if(p_src == NULL)
+        die("got null strings");
+
     int len = sysutil_strlen(p_src);
-    p_str->pbuf = sysutil_malloc(len);
-    p_str->alloc_bytes = len;
+    p_str->pbuf = (char *)sysutil_malloc(len+1);
+    p_str->alloc_bytes = len+1;
     p_str->num_len = len;
 
+    sysutil_memclr(p_str->pbuf,len+1);
     sysutil_memcpy(p_str->pbuf,p_src,len);
 }
+
 void str_alloc_alt_term(struct mystr* p_str, const char* p_src, char term)
 {
-
+    private_str_alloc_memchunk(p_str,)
 }
+
 void str_alloc_ulong(struct mystr* p_str, unsigned long the_ulong)
 {
     int ulong_size = sizeof(unsigned long);
@@ -53,18 +64,22 @@ const char* str_strdup(const struct mystr* p_str)
 void str_empty(struct mystr* p_str)
 {
     sysutil_memclr(p_str->pbuf,p_str->num_len);
+    p_str->num_len = 0;
 }
+
 void str_free(struct mystr* p_str)
 {
     p_str->alloc_bytes = 0;
     p_str->num_len = 0;
     sysutil_free(p_str->pbuf);
 }
+
 void str_trunc(struct mystr* p_str, unsigned int trunc_len)
 {
     sysutil_memclr(p_str->pbuf,trunc_len);
     p_str->num_len = 0;
 }
+
 void str_reserve(struct mystr* p_str, unsigned int res_len)
 {
     p_str->pbuf = sysutil_malloc(res_len);
@@ -75,6 +90,7 @@ int str_isempty(const struct mystr* p_str)
 {
     return p_str->num_len == 0;
 }
+
 unsigned int str_getlen(const struct mystr* p_str)
 {
     return p_str->num_len;
@@ -209,20 +225,22 @@ void str_upper(struct mystr* p_str)
 void str_rpad(struct mystr* p_str, const unsigned int min_width)
 {
     int adjust_len = p_str->alloc_bytes + min_width;
-    void *tmp = sysutil_malloc(adjust_len);
-    sysutil_memcpy(tmp,p_str->pbuf,p_str->num_len);
+    void *ptr_tmp = sysutil_malloc(adjust_len);
+    sysutil_memclr(ptr_tmp,adjust_len);
+    sysutil_memcpy(ptr_tmp,p_str->pbuf,p_str->num_len);
     sysutil_free(p_str->pbuf);
-    p_str->pbuf = tmp;
+    p_str->pbuf = ptr_tmp;
     p_str->alloc_bytes = adjust_len;
 }
 
 void str_lpad(struct mystr* p_str, const unsigned int min_width)
 {
     int adjust_len = p_str->alloc_bytes + min_width;
-    void *tmp = sysutil_malloc(adjust_len);
-    sysutil_memcpy(tmp+min_width,p_str->pbuf,p_str->num_len);
+    void *ptr_tmp = sysutil_malloc(adjust_len);
+    sysutil_memclr(ptr_tmp,adjust_len);
+    sysutil_memcpy(ptr_tmp+min_width,p_str->pbuf,p_str->num_len);
     sysutil_free(p_str->pbuf);
-    p_str->pbuf = tmp;
+    p_str->pbuf = ptr_tmp;
     p_str->alloc_bytes = adjust_len;
 }
 
@@ -294,9 +312,6 @@ void str_split_text(struct mystr* p_src, struct mystr* p_rhs,
                      && p_text[jpos] != '\0'; kpos++,jpos++) ;
         if(!p_text[jpos]) break;
     }
-    //1234567str1234
-    //str12345678912
-    //12345678911str
     surplus_size = src_len - match_len - ipos;
 
     if(surplus_size)

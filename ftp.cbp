@@ -46,6 +46,10 @@
 		</Unit>
 		<Unit filename="ftpcmd.h" />
 		<Unit filename="ftpcode.h" />
+		<Unit filename="hash.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="hash.h" />
 		<Unit filename="ls.c">
 			<Option compilerVar="CC" />
 		</Unit>

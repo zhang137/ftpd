@@ -13,9 +13,6 @@ struct mystr
 #define INIT_MYSTR \
   { (void*)0, 0, 0 }
 
-#ifdef VSFTP_STRING_HELPER
-#define str_alloc_memchunk private_str_alloc_memchunk
-#endif
 
 void private_str_alloc_memchunk(struct mystr* p_str, const char* p_src,
                                 unsigned int len);

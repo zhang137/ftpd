@@ -2,7 +2,7 @@
 #include <syslog.h>
 #include "session.h"
 #include "sysutil.h"
-
+#include "ls.h"
 //#include "util.h"
 #include "twoprocess.h"
 
@@ -26,7 +26,7 @@ int main()
     sysutil_openlog(LOG_DAEMON);
     twoprogress(&session);
 
-
+    //util_ls("/home/usr/");
 
 
     return 0;

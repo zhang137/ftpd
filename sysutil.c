@@ -133,6 +133,13 @@ void sysutil_closedir(struct sysutil_dir* p_dir)
     if(ret < 0);
         //die("closedir");
 }
+
+void sysutil_rewinddir(struct sysutil_dir *p_dir)
+{
+    rewinddir(p_dir);
+}
+
+
 const char* sysutil_next_dirent(struct sysutil_dir* p_dir)
 {
     struct dirent *tmp = readdir(p_dir);
@@ -187,7 +194,7 @@ void sysutil_dupfd2(int old_fd, int new_fd)
 void sysutil_close(int fd)
 {
     int res;
-    res = sysutil_close_failok(fd))
+    res = sysutil_close_failok(fd);
     if(res < 0)
     {
         die("close");
@@ -312,32 +319,29 @@ int sysutil_write_loop(const int fd, const void* p_buf, unsigned int size)
 
 int sysutil_stat(const char* p_name, struct sysutil_statbuf** p_ptr)
 {
-    struct sysutil_statbuf statbuf;
-    if(stat(p_name,&statbuf) < 0)
+    *p_ptr = sysutil_malloc(sizeof(**p_ptr));
+    if(stat(p_name,*p_ptr) < 0)
     {
         return -1;
     }
-    *p_ptr = &statbuf;
     return 0;
 }
 int sysutil_lstat(const char* p_name, struct sysutil_statbuf** p_ptr)
 {
-    struct sysutil_statbuf statbuf;
-    if(lstat(p_name,&statbuf) < 0)
+    *p_ptr = sysutil_malloc(sizeof(**p_ptr));
+    if(lstat(p_name,*p_ptr) < 0)
     {
-
+        return -1;
     }
-    *p_ptr = &statbuf;
     return 0;
 }
 void sysutil_fstat(int fd, struct sysutil_statbuf** p_ptr)
 {
-    struct sysutil_statbuf statbuf;
-    if(fstat(fd,&statbuf) < 0)
+    *p_ptr = sysutil_malloc(sizeof(**p_ptr));
+    if(fstat(fd,*p_ptr) < 0)
     {
-
+        return -1;
     }
-    *p_ptr = &statbuf;
     return 0;
 }
 void sysutil_dir_stat(const struct sysutil_dir* p_dir,
@@ -498,9 +502,7 @@ void* sysutil_malloc(unsigned int size)
     ptr = malloc(size);
     if(ptr == NULL)
     {
-        sysutil_syslog("malloc",LOG_ERR);
-        sysutil_exit(EXIT_FAILURE);
-        //die("malloc error");
+        die("malloc error");
     }
 
 
@@ -601,7 +603,7 @@ unsigned int sysutil_strlen(const char* p_text)
     unsigned int len = strlen(p_text);
     if(len > INT_MAX / 8)
     {
-        ;//die("string len too large");
+        die("string len too large");
     }
     return len;
 }
@@ -611,7 +613,7 @@ char* sysutil_strdup(const char* p_str)
 }
 void sysutil_memclr(void* p_dest, unsigned int size)
 {
-    memset(p_dest,0,size);
+    memset(p_dest,'\0',size);
 }
 void sysutil_memcpy(void* p_dest, const void* p_src,
                         const unsigned int size)
@@ -898,7 +900,7 @@ int sysutil_accept_timeout(int fd, struct sysutil_sockaddr* p_sockaddr,
         fd_set rfdset;
         fd_set wfdset;
 
-        tv.tv_sec = wait_seconds; //sec = 0 ?
+        tv.tv_sec = wait_seconds;
         tv.tv_usec = 0;
 
         FD_ZERO(&rfdset);
@@ -919,10 +921,10 @@ int sysutil_accept_timeout(int fd, struct sysutil_sockaddr* p_sockaddr,
             return -1;
         }
     }
-    retval = accept(fd, &remote_addr.u.u_sockaddr, &socklen);
+    retval = accept(fd, &(remote_addr.u.u_sockaddr), &socklen);
     if (retval < 0)
     {
-        return retval;retval = accept(fd, &remote_addr.u.u_sockaddr, &socklen);
+        return retval;
     }
 
     if(remote_addr.u.u_sockaddr.sa_family != AF_INET &&
