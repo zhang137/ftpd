@@ -3,8 +3,7 @@
 
 #include "sysutil.h"
 
-//void progress_credentials(struct mystr *user)
-void init_connection();
+void init_connection(struct ftpd_session *session);
 struct mystr get_cmd_from_client();
 
 #endif // PRELOGIN_H_INCLUDED

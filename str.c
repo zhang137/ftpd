@@ -31,7 +31,11 @@ void str_alloc_text(struct mystr* p_str, const char* p_src)
 
 void str_alloc_alt_term(struct mystr* p_str, const char* p_src, char term)
 {
-    private_str_alloc_memchunk(p_str,)
+    int strlen = sysutil_strlen(p_src);
+    private_str_alloc_memchunk(p_str,p_src,strlen);
+    str_replace_char(p_str,'\r','\0');
+    p_str->num_len -= 1;
+
 }
 
 void str_alloc_ulong(struct mystr* p_str, unsigned long the_ulong)
@@ -246,7 +250,13 @@ void str_lpad(struct mystr* p_str, const unsigned int min_width)
 
 void str_replace_char(struct mystr* p_str, char from, char to)
 {
-    p_str->pbuf[from] = to;
+    int i;
+    for(i = 0; i < p_str->num_len; i++)
+    {
+        if(p_str->pbuf[i] == from)
+            break;
+    }
+    p_str->pbuf[i] = to;
 }
 
 void str_replace_text(struct mystr* p_str, const char* p_from,
@@ -425,13 +435,10 @@ int str_contains_space(const struct mystr* p_str)
 int str_all_space(const struct mystr* p_str)
 {
     int i;
-    if(p_str->num_len > 0)
+    for(i = 0; i < p_str->num_len; i++)
     {
-        for(i = 0; i < p_str->num_len; i++)
-        {
-            if(!sysutil_isspace(str_get_char_at(p_str->pbuf,i)))
-                 return 0;
-        }
+        if(!sysutil_isspace(str_get_char_at(p_str->pbuf,i)))
+            return 0;
     }
     return 1;
 }

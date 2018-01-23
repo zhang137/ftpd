@@ -21,7 +21,7 @@ int get_netdata(struct mystr *str_arg,int *end_point,char term)
         nread = sysutil_recv_peek(FTP_CMDRDIO,str_line.pbuf,FTPD_CMDDATA_LEN);
         if(sysutil_retval_is_error(nread))
         {
-            if(errno == EWOULDBLOCK && errno == EINTR)
+            if(errno == EWOULDBLOCK || errno == EINTR)
                 continue;
             die("recv");
         }
@@ -32,7 +32,7 @@ int get_netdata(struct mystr *str_arg,int *end_point,char term)
             if(str_get_char_at(str_line.pbuf,i) == term)
                 term_point = i;
         }
-        if(term_point > 1 && term_point != nread)
+        if(term_point != nread)
         {
             nread = read_cmd_data(FTP_CMDRDIO,&str_line,term_point);
             *end_point = term_point;

@@ -10,6 +10,8 @@ void twoprogress(struct ftpd_session *session)
     int retval;
     set_private_unix_socket(session);
 
+    write_cmd_respond(FTP_CMDWRIO,FTP_BADCMD,"BAD COMMAND!");
+
     retval = sysutil_fork();
     if(retval)
     {
