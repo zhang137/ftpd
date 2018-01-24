@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <syslog.h>
-#include "util.h"
 #include "sysutil.h"
+#include "util.h"
+#include "commoncode.h"
 
 void standalone_socket(struct ftpd_session *session)
 {
@@ -32,7 +33,7 @@ void standalone_socket(struct ftpd_session *session)
     sysutil_activate_reuseaddr(listen_fd);
     sysutil_sockaddr_alloc_ipv4(&listen_addr);
     sysutil_sockaddr_set_any(listen_addr);
-    sysutil_sockaddr_set_port(listen_addr,21);
+    sysutil_sockaddr_set_port(listen_addr,FTPD_CMDPORT);
 
     if(sysutil_bind(listen_fd,listen_addr)  < 0)
         die("bind");

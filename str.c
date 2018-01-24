@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "str.h"
 #include "sysutil.h"
 
@@ -134,7 +135,8 @@ int str_equal(const struct mystr* p_str1, const struct mystr* p_str2)
 int str_equal_text(const struct mystr* p_str, const char* p_text)
 {
     unsigned int text_len = sysutil_strlen(p_text);
-    return (str_equal_internal(p_str->pbuf,p_str->num_len,p_text,text_len) == 0);
+    unsigned int str_len = sysutil_strlen(p_str->pbuf);
+    return (str_equal_internal(p_str->pbuf,str_len,p_text,text_len) == 0);
 }
 void str_append_str(struct mystr* p_str, const struct mystr* p_other)
 {
@@ -163,7 +165,7 @@ void str_append_text(struct mystr* p_str, const char* p_src)
     sysutil_memcpy(p_str->pbuf+num_len,p_src,append_len);
     p_str->num_len += append_len;
 }
-void str_append_ulong(struct mystr* p_str, unsigned long the_long) /// ?????
+void str_append_ulong(struct mystr* p_str, unsigned long the_long)
 {
     int num_len = p_str->num_len;
     int ulong_size = sizeof(unsigned long);
@@ -173,7 +175,7 @@ void str_append_ulong(struct mystr* p_str, unsigned long the_long) /// ?????
          str_rpad(p_str,ulong_size - left_len);
     }
 
-    sysutil_memcpy(p_str->pbuf+num_len,the_long,ulong_size);
+    sysutil_memcpy(p_str->pbuf+num_len,&the_long,ulong_size);
     p_str->num_len += ulong_size;
 }
 
@@ -187,20 +189,20 @@ void str_append_filesize_t(struct mystr* p_str, filesize_t the_filesize)
         str_rpad(p_str,filesize_t_size - left_len);
     }
 
-    sysutil_memcpy(p_str->pbuf+num_len,the_filesize,filesize_t_size);
+    sysutil_memcpy(p_str->pbuf+num_len,&the_filesize,filesize_t_size);
     p_str->num_len += filesize_t_size;
 }
 
 void str_append_char(struct mystr* p_str, char the_char)
 {
     int num_len = p_str->num_len;
-    int char_size = sizeof(the_char);
+    int char_size = sizeof(char);
     int left_len = p_str->alloc_bytes - num_len;
-    if(left_len < char_size)
+    if(left_len <= char_size)
     {
         str_rpad(p_str,1);
     }
-    sysutil_memcpy(p_str->pbuf+num_len,the_char,char_size);
+    sysutil_memcpy(p_str->pbuf+num_len,&the_char,char_size);
     p_str->num_len += char_size;
 }
 
@@ -233,6 +235,7 @@ void str_rpad(struct mystr* p_str, const unsigned int min_width)
     sysutil_memclr(ptr_tmp,adjust_len);
     sysutil_memcpy(ptr_tmp,p_str->pbuf,p_str->num_len);
     sysutil_free(p_str->pbuf);
+
     p_str->pbuf = ptr_tmp;
     p_str->alloc_bytes = adjust_len;
 }
@@ -326,7 +329,7 @@ void str_split_text(struct mystr* p_src, struct mystr* p_rhs,
 
     if(surplus_size)
     {
-        p_rhs->pbuf = malloc(surplus_size);
+        p_rhs->pbuf = (char *)sysutil_malloc(surplus_size);
         p_rhs->alloc_bytes = surplus_size;
         p_rhs->num_len = surplus_size;
         sysutil_memcpy(p_rhs->pbuf, p_src->pbuf+ipos+match_len, surplus_size);
@@ -355,7 +358,7 @@ void str_split_text_reverse(struct mystr* p_src, struct mystr* p_rhs,
     surplus_size = src_len - match_len - ipos;
     if(surplus_size > 0)
     {
-        p_rhs->pbuf = malloc(surplus_size);
+        p_rhs->pbuf = (char *)sysutil_malloc(surplus_size);
         p_rhs->alloc_bytes = surplus_size;
         p_rhs->num_len = surplus_size;
         sysutil_memcpy(p_rhs->pbuf, p_src->pbuf+ipos+match_len, surplus_size);
@@ -437,7 +440,7 @@ int str_all_space(const struct mystr* p_str)
     int i;
     for(i = 0; i < p_str->num_len; i++)
     {
-        if(!sysutil_isspace(str_get_char_at(p_str->pbuf,i)))
+        if(!sysutil_isspace(str_get_char_at(p_str,i)))
             return 0;
     }
     return 1;
@@ -470,7 +473,7 @@ void str_replace_unprintable(struct mystr* p_str, char new_char)
 }
 int str_atoi(const struct mystr* p_str)
 {
-    return atoi(p_str->pbuf);
+    //return atoi(p_str->pbuf);
 }
 
 filesize_t str_a_to_filesize_t(const struct mystr* p_str)

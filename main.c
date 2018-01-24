@@ -2,7 +2,6 @@
 #include <syslog.h>
 #include "session.h"
 #include "sysutil.h"
-#include "ls.h"
 //#include "util.h"
 #include "twoprocess.h"
 

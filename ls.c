@@ -4,6 +4,7 @@
 #include <time.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include "sysutil.h"
 
 #define MAX(x,y) ((x) < (y) ? (y) : (x))
@@ -24,7 +25,7 @@ int max_align(int align,int to_align)
 
 void util_ls(const char *ptrPath)
 {
-    sysutil_dir *p_Dir;
+    struct sysutil_dir *p_Dir;
     struct sysutil_statbuf *statbuf;
     const char *ptr_dname;
     struct sysutil_user *p_pwd;

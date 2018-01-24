@@ -2,17 +2,17 @@
 #define TWOPROCESS_H_INCLUDED
 
 #include "session.h"
-#include "sysutil.h"
 
 void twoprogress(struct ftpd_session *session);
 
 void set_private_unix_socket(struct ftpd_session *session);
 
-void util_close_parent_context(struct ftpd_session *session);
+void close_parent_context(struct ftpd_session *session);
 
-void util_close_child_context(struct ftpd_session *session);
+void close_child_context(struct ftpd_session *session);
 
-void delall_privilege();
+void del_privilege();
 
+void wait_req();
 
 #endif // TWOPROCESS_H_INCLUDED

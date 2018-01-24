@@ -372,8 +372,8 @@ int sysutil_setmodtime(const char* p_file, long the_time, int is_localtime);
 void sysutil_set_address_space_limit(unsigned long bytes);
 void sysutil_set_no_fds();
 void sysutil_set_no_procs();
-
 void sysutil_set_sockopt(int fd);
+const char * sysutil_uname();
 
 
 #endif // SYSUTIL_H_INCLUDED

@@ -9,6 +9,7 @@
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
 #include <netinet/ip6.h>
+#include <sys/utsname.h>
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <utime.h>
@@ -25,6 +26,7 @@
 #include <errno.h>
 
 #include "sysutil.h"
+#include "str.h"
 
 
 void die(const char *exit_str)
@@ -43,6 +45,32 @@ int sysutil_retval_is_error(int retval)
 
 void sysutil_install_null_sighandler(const enum EVSFSysUtilSignal sig)
 {
+    struct sigaction saction;
+    sigemptyset(&saction.sa_mask);
+
+    saction.sa_flags = 0;
+    saction.sa_handler = NULL;
+
+    switch(sig)
+    {
+    case  kVSFSysUtilSigALRM:
+        sigaction(SIGALRM,&saction,NULL);
+        break;
+    case  kVSFSysUtilSigTERM:
+        sigaction(SIGALRM,&saction,NULL);
+        break;
+    case  kVSFSysUtilSigCHLD:
+        sigaction(SIGALRM,&saction,NULL);
+        break;
+    case  kVSFSysUtilSigPIPE:
+        sigaction(SIGALRM,&saction,NULL);
+        break;
+    case  kVSFSysUtilSigURG:
+        sigaction(SIGALRM,&saction,NULL);
+        break;
+    case  kVSFSysUtilSigHUP:
+        sigaction(SIGALRM,&saction,NULL);
+    };
 
 }
 
@@ -52,6 +80,32 @@ void sysutil_install_sighandler(const enum EVSFSysUtilSignal sig,
                                     int use_alarm)
 {
 
+    struct sigaction saction;
+    sigemptyset(&saction.sa_mask);
+
+    saction.sa_flags = 0;
+    saction.sa_handler = handler;
+
+    switch(sig)
+    {
+    case  kVSFSysUtilSigALRM:
+        sigaction(SIGALRM,&saction,NULL);
+        break;
+    case  kVSFSysUtilSigTERM:
+        sigaction(SIGALRM,&saction,NULL);
+        break;
+    case  kVSFSysUtilSigCHLD:
+        sigaction(SIGALRM,&saction,NULL);
+        break;
+    case  kVSFSysUtilSigPIPE:
+        sigaction(SIGALRM,&saction,NULL);
+        break;
+    case  kVSFSysUtilSigURG:
+        sigaction(SIGALRM,&saction,NULL);
+        break;
+    case  kVSFSysUtilSigHUP:
+        sigaction(SIGALRM,&saction,NULL);
+    };
 }
 void sysutil_install_async_sighandler(const enum EVSFSysUtilSignal sig,
                                           async_sighandle_t handler)
@@ -75,6 +129,7 @@ void sysutil_check_pending_actions(
 {
 
 }
+
 void sysutil_block_sig(const enum EVSFSysUtilSignal sig)
 {
 
@@ -91,7 +146,7 @@ void sysutil_set_alarm(const unsigned int trigger_seconds)
 }
 void sysutil_clear_alarm(void)
 {
-    alarm(0);
+    sysutil_set_alarm(0);
 }
 
 /* Directory related things */
@@ -139,7 +194,6 @@ void sysutil_rewinddir(struct sysutil_dir *p_dir)
     rewinddir(p_dir);
 }
 
-
 const char* sysutil_next_dirent(struct sysutil_dir* p_dir)
 {
     struct dirent *tmp = readdir(p_dir);
@@ -156,11 +210,12 @@ int sysutil_open_file(const char* p_filename,
     {
     case kVSFSysUtilOpenReadOnly:
         retval = open(p_filename,O_NONBLOCK|O_WRONLY);
+        break;
     case kVSFSysUtilOpenWriteOnly:
         retval = open(p_filename,O_NONBLOCK|O_WRONLY);
+        break;
     case kVSFSysUtilOpenReadWrite:
         retval = open(p_filename,O_NONBLOCK|O_WRONLY);
-    default:
         break;
     };
 
@@ -1380,7 +1435,22 @@ void sysutil_clear_fd()
     }
 }
 
-
+const char *sysutil_uname()
+{
+    const char *p_src = NULL;
+    struct mystr str = INIT_MYSTR;
+    struct utsname sys_name;
+    if(uname(&sys_name) < 0)
+    {
+        die("uname");
+    }
+    str_append_char(&str,' ');
+    str_append_text(&str,sys_name.sysname);
+    str_append_text(&str," Type: L8\n");
+    p_src = str_strdup(&str);
+    str_free(&str);
+    return p_src;
+}
 
 
 

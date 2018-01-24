@@ -3,6 +3,9 @@
 
 #include "filesize.h"
 
+#define INIT_MYSTR \
+  { (void*)0, 0, 0 }
+
 struct mystr
 {
   char* pbuf;
@@ -10,8 +13,7 @@ struct mystr
   unsigned int num_len;
   unsigned int alloc_bytes;
 };
-#define INIT_MYSTR \
-  { (void*)0, 0, 0 }
+
 
 
 void private_str_alloc_memchunk(struct mystr* p_str, const char* p_src,

@@ -1,16 +1,18 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <syslog.h>
-#include "commoncode.h"
-#include "twoprocess.h"
+#include "sysutil.h"
 #include "prelogin.h"
+#include "twoprocess.h"
+#include "ftpcode.h"
+#include "commoncode.h"
 
 void twoprogress(struct ftpd_session *session)
 {
     int retval;
     set_private_unix_socket(session);
 
-    write_cmd_respond(FTP_CMDWRIO,FTP_BADCMD,"BAD COMMAND!");
+    write_cmd_respond(FTPD_CMDWRIO,FTP_GREET," Welcome to zyy's ftpd\n");
 
     retval = sysutil_fork();
     if(retval)
@@ -18,12 +20,14 @@ void twoprogress(struct ftpd_session *session)
         close_child_context(session);
         while(1)
         {
+            sleep(2);
+            exit(0);
             wait_req();
         }
     }
     close_parent_context(session);
     del_privilege();
-    init_connection();
+    init_connection(session);
     //
 
 }
@@ -56,7 +60,7 @@ void del_privilege()
     struct mystr nobody;
     struct sysutil_user *passwd = NULL;
 
-    str_alloc_text(&nobody,tunable_nobody);
+    str_alloc_text(&nobody,"nobody");
     passwd = sysutil_getpwnam(str_getbuf(&nobody));
     if(!passwd)
     {
@@ -82,7 +86,10 @@ void del_privilege()
 }
 
 
-void wait_req();
+void wait_req()
+{
+
+}
 
 
 
