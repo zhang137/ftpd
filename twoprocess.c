@@ -20,8 +20,6 @@ void twoprogress(struct ftpd_session *session)
         close_child_context(session);
         while(1)
         {
-            sleep(2);
-            exit(0);
             wait_req();
         }
     }

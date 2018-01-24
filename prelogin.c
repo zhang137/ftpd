@@ -49,7 +49,7 @@ struct mystr get_cmd_from_client(struct mystr *str_arg)
     const char *p_src = NULL;
     struct mystr str_line = INIT_MYSTR;
     struct mystr str_cmd  =  INIT_MYSTR;
-
+    sysutil_syslog("get_netdata",LOG_INFO | LOG_USER);
     nread = get_netdata(&str_line,term);
 
     if(str_get_char_at(&str_line,nread-1) == '\r')

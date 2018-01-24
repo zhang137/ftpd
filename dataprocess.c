@@ -8,44 +8,51 @@
 #include "commoncode.h"
 #include "ftpcode.h"
 
-int get_netdata(struct mystr *str_arg,char term)
+int get_netdata(struct mystr *str_line,char term)
 {
-    struct mystr str_line = INIT_MYSTR;
+    struct mystr str = INIT_MYSTR;
+    struct mystr line = INIT_MYSTR;
+    int retval = 0;
     unsigned int term_point = 0;
-    unsigned int nread = 0,i;
+    unsigned int nread = 0;
 
-    private_str_alloc_memchunk(&str_line,NULL,FTPD_CMDDATA_LEN);
+    private_str_alloc_memchunk(&str,NULL,FTPD_CMDDATA_LEN);
     while(1)
     {
-        nread = sysutil_recv_peek(FTPD_CMDRDIO,str_line.pbuf,FTPD_CMDDATA_LEN);
-
-        if(sysutil_retval_is_error(nread))
-        {
-            if(errno == EWOULDBLOCK || errno == EINTR)
-                continue;
-            die("recv");
-        }
+        nread = message_recv_peek(FTPD_CMDRDIO,&str,FTPD_CMDDATA_LEN);
+        sysutil_syslog(str.pbuf,LOG_INFO | LOG_USER);
         if(!nread)
             return 0;
-        for (i = 0; i < nread; i++)
-        {
-            if(str_get_char_at(&str_line,i) == term)
-                term_point = i;
-        }
 
-        if(term_point != nread)
+        retval = str_getline(&str,&line,&term_point);
+        sysutil_syslog(line.pbuf,LOG_INFO | LOG_USER);
+        if(retval)
         {
-            nread = read_cmd_data(FTPD_CMDRDIO,&str_line,term_point+1);
-            sysutil_memcpy(str_arg,&str_line,sizeof(str_line));
+            nread = read_cmd_data(FTPD_CMDRDIO,&str,term_point+1);
+            sysutil_memcpy(str_line,&line,sizeof(line));
             return term_point;
         }
         else
         {
-            read_cmd_data(FTPD_CMDRDIO,&str_line,nread);
+            read_cmd_data(FTPD_CMDRDIO,&str,nread);
             term_point = 0;
         }
 
     }
+}
+
+int message_recv_peek(int fd,struct mystr *p_str,unsigned int datalen)
+{
+    int retval;
+    while((retval = sysutil_recv_peek(FTPD_CMDRDIO,p_str->pbuf,datalen)) < 0)
+    {
+        if(errno == EWOULDBLOCK || errno == EINTR)
+            continue;
+        die("recv_peek");
+    }
+    p_str->alloc_bytes = retval;
+    p_str->num_len = retval;
+    return retval;
 }
 
 void write_cmd_respond(int fd, unsigned resp_code,const char *resp_str)

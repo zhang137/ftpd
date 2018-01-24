@@ -499,17 +499,17 @@ int str_getline(const struct mystr* p_str, struct mystr* p_line_str,
             break;
         }
     }
-
-   // if(ipos == str_len) return;
-
-    if(ipos > 0)
+    if(ipos < src_len)
     {
-        p_line_str->pbuf = sysutil_malloc(ipos);
+        p_line_str->pbuf = sysutil_malloc(ipos+1);
         p_line_str->num_len = p_line_str->alloc_bytes = ipos;
+
+        sysutil_memclr(p_line_str->pbuf,ipos+1);
         sysutil_memcpy(p_line_str->pbuf,p_str->pbuf,ipos);
         *p_pos = ipos;
+        return 1;
     }
-
+    return 0;
 }
 
 int str_contains_line(const struct mystr* p_str,
