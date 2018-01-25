@@ -21,6 +21,8 @@ int main()
     session.data_timeout = 30;
     session.is_anonymous = 0;
 
+    sysutil_install_null_sighandler(kVSFSysUtilSigCHLD);
+
     standalone_socket(&session);
     sysutil_openlog(LOG_DAEMON);
     twoprogress(&session);

@@ -83,10 +83,13 @@ int read_cmd_data(int fd,struct mystr *strbuf,unsigned int size)
 int get_request_data(int fd, struct mystr* strbuf)
 {
     int retval;
+
     retval = sysutil_read(fd,strbuf->pbuf,FTPD_UNIXSOCK_LEN);
     if(!retval)
         return 0;
+
     strbuf->num_len = retval;
+
     return retval;
 }
 
@@ -99,7 +102,18 @@ void set_request_data(int fd, struct mystr* strbuf)
 
 int get_cmd_responds(int fd)
 {
+    unsigned long retval;
+    int ulong_len = sizeof(unsigned long);
+    struct mystr strbuf = INIT_MYSTR;
+    str_alloc_ulong(&strbuf,ulong_len);
 
+    retval = sysutil_read(fd,strbuf.pbuf,ulong_len);
+    if(!retval)
+        sysutil_exit(-1);
+
+    sysutil_memcpy(&retval,strbuf.pbuf,ulong_len);
+
+    return retval;
 }
 
 

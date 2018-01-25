@@ -92,25 +92,38 @@ void del_privilege()
 void deal_private_req(struct ftpd_session *session)
 {
     unsigned long  retval;
-    struct mystr strbuf;
-    private_str_alloc_memchunk(&str,strbuf.pbuf,FTPD_UNIXSOCK_LEN);
+    int ulong_size = sizeof(unsigned long);
+    struct mystr strbuf = INIT_MYSTR;
+    struct mystr str_user = INIT_MYSTR;
+    struct mystr str_pass = INIT_MYSTR;
+
+    private_str_alloc_memchunk(&strbuf,NULL,FTPD_UNIXSOCK_LEN);
 
     while(1)
     {
         retval = get_request_data(session->parent_fd,&strbuf);
-        if(!retval)
-        {
+        if(!retval) {
 
         }
-        sysutil_memcpy(&retval,strbuf->pbuf,szieof(unsigned long));
+        sysutil_memcpy(&retval,strbuf.pbuf,ulong_size);
+
         switch(retval)
         {
-        case PUNIXSOCKUSER:
-
-        case PUNXISOCKPASS:
+        case PUNIXSOCKLOGIN:
+            str_right(&strbuf,&str_user,ulong_size);
+            break;
+        case PUNIXSOCKPWD:
+            str_right(&strbuf,&str_pass,ulong_size);
+            break;
         }
+        if(!str_isempty(&str_user) && !str_isempty(&str_pass))
+            break;
     }
 
+}
+
+void prepare_login(struct mystr *str_arg,struct ftpd_session *session)
+{
 
 }
 

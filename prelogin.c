@@ -56,7 +56,6 @@ struct mystr get_rpc_request(struct mystr *str_arg)
     }
 
     str_split_char(&str_cmd,str_arg,' ');
-
     if(str_contains_space(str_arg))
     {
         *str_arg = str_wipeout_blank(str_arg);

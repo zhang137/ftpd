@@ -26,8 +26,8 @@ void handle_user(struct ftpd_session *session, struct mystr *str_arg)
 
 void handle_pass(struct ftpd_session *session, struct mystr *str_arg)
 {
-    struct mystr strbuf = INIT_MYSTR;
     int retval;
+    struct mystr strbuf = INIT_MYSTR;
 
     if(str_isempty(&(session->user_str)))
     {
@@ -37,21 +37,26 @@ void handle_pass(struct ftpd_session *session, struct mystr *str_arg)
     if(!str_all_space(str_arg) || !str_contains_unprintable(str_arg))
     {
         write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINERR," The password contains illegal characters or is null.\n");
+        return;
+    }
+
+    if(str_getlen(&str_arg) > 128)
+    {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINERR," The password is too long");
+        return ;
     }
 
     retval = get_cmd_responds(session->child_fd);
     switch(retval)
     {
     case PUNIXSOCKLOGINFAIL:
-    {
-        write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINERR," Login incorrect.\n");
+        write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINOK," Login incorrect.\n");
         break;
-    }
     case PUNIXSOCKLOGINOK:
         write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINOK," Login successful.\n");
+        sysutil_exit(0);
     };
-
-
+        // todo
 }
 
 

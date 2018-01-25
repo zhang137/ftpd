@@ -1,16 +1,19 @@
 # depslib dependency file v1.0
-1516792112 source:/home/zyy/ftp/ftp/ftpcmd.c
+1516891463 source:/home/zyy/ftp/ftp/ftpcmd.c
 	<stdio.h>
 	<stdlib.h>
 	<unistd.h>
 	<syslog.h>
 	"ftpcmd.h"
 	"ftpcode.h"
+	"commoncode.h"
 	"dataprocess.h"
 
-1516792112 /home/zyy/ftp/ftp/ftpcmd.h
+1516879336 /home/zyy/ftp/ftp/ftpcmd.h
+	"session.h"
+	"str.h"
 
-1516792112 source:/home/zyy/ftp/ftp/main.c
+1516887501 source:/home/zyy/ftp/ftp/main.c
 	<stdio.h>
 	<syslog.h>
 	"session.h"
@@ -34,12 +37,12 @@
 	<netinet/in.h>
 	"str.h"
 
-1516792112 /home/zyy/ftp/ftp/str.h
+1516879336 /home/zyy/ftp/ftp/str.h
 	"filesize.h"
 
 1514806534 /home/zyy/ftp/ftp/filesize.h
 
-1516797401 source:/home/zyy/ftp/ftp/str.c
+1516879336 source:/home/zyy/ftp/ftp/str.c
 	<stdio.h>
 	"str.h"
 	"sysutil.h"
@@ -155,7 +158,7 @@
 
 1516278475 /home/zyy/ftp/ftp/controlprocess.h
 
-1516798138 source:/home/zyy/ftp/ftp/dataprocess.c
+1516889761 source:/home/zyy/ftp/ftp/dataprocess.c
 	<stdio.h>
 	<stdlib.h>
 	<unistd.h>
@@ -166,14 +169,13 @@
 	"commoncode.h"
 	"ftpcode.h"
 
-1516797554 /home/zyy/ftp/ftp/dataprocess.h
+1516887553 /home/zyy/ftp/ftp/dataprocess.h
 	"str.h"
-	"commoncode.h"
 
-1516792112 /home/zyy/ftp/ftp/twoprocess.h
+1516891284 /home/zyy/ftp/ftp/twoprocess.h
 	"session.h"
 
-1516792112 source:/home/zyy/ftp/ftp/sysutil.c
+1516879336 source:/home/zyy/ftp/ftp/sysutil.c
 	<stdio.h>
 	<stdlib.h>
 	<sys/types.h>
@@ -203,13 +205,14 @@
 	"sysutil.h"
 	"str.h"
 
-1516794336 source:/home/zyy/ftp/ftp/twoprocess.c
+1516891481 source:/home/zyy/ftp/ftp/twoprocess.c
 	<stdlib.h>
 	<errno.h>
 	<syslog.h>
 	"sysutil.h"
 	"prelogin.h"
 	"twoprocess.h"
+	"dataprocess.h"
 	"ftpcode.h"
 	"commoncode.h"
 
@@ -259,7 +262,7 @@
 	"str.h"
 	"session.h"
 
-1516798076 source:/home/zyy/ftp/ftp/prelogin.c
+1516886027 source:/home/zyy/ftp/ftp/prelogin.c
 	<stdio.h>
 	<syslog.h>
 	"sysutil.h"
@@ -268,7 +271,7 @@
 	"commoncode.h"
 	"ftpcmd.h"
 
-1516792112 /home/zyy/ftp/ftp/prelogin.h
+1516879336 /home/zyy/ftp/ftp/prelogin.h
 	"str.h"
 	"session.h"
 
@@ -296,10 +299,10 @@
 1516858606 source:/home/usr/projects/ftp/ftpd/commoncode.c
 	"commoncode.h"
 
-1516792112 source:/home/zyy/ftp/ftp/commoncode.c
+1516879336 source:/home/zyy/ftp/ftp/commoncode.c
 	"commoncode.h"
 
-1516792112 /home/zyy/ftp/ftp/commoncode.h
+1516891354 /home/zyy/ftp/ftp/commoncode.h
 
 1514801972 /home/zyy/ftp/ftp/ftpcode.h
 

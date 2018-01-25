@@ -8,7 +8,7 @@ int read_cmd_data(int fd,struct mystr *strbuf,unsigned int size);
 void write_cmd_data(int fd,struct mystr *strbuf,unsigned int size);
 void write_cmd_respond(int fd, unsigned resp_code,const char *resp_str);
 int message_recv_peek(int fd,struct mystr *p_str,unsigned int datalen);
-void get_request_data(int fd, struct mystr* strbuf);
+int get_request_data(int fd, struct mystr* strbuf);
 void set_request_data(int fd, struct mystr* strbuf);
 int get_cmd_responds();
 
