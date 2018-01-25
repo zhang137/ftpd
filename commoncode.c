@@ -1,3 +1,3 @@
 #include "commoncode.h"
 
-const char *tunable_nobody = "nodody";
+const char* const tunable_nobody = "nobody";

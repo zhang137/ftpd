@@ -4,8 +4,12 @@
 #include "sysutil.h"
 #include "prelogin.h"
 #include "twoprocess.h"
+#include "dataprocess.h"
 #include "ftpcode.h"
 #include "commoncode.h"
+
+extern const char* const tunable_nobody;
+
 
 void twoprogress(struct ftpd_session *session)
 {
@@ -13,14 +17,14 @@ void twoprogress(struct ftpd_session *session)
     set_private_unix_socket(session);
 
     write_cmd_respond(FTPD_CMDWRIO,FTP_GREET," Welcome to zyy's ftpd\n");
-
     retval = sysutil_fork();
+
     if(retval)
     {
         close_child_context(session);
         while(1)
         {
-            wait_req();
+            deal_private_req(session);
         }
     }
     close_parent_context(session);
@@ -43,12 +47,14 @@ void close_parent_context(struct ftpd_session *session)
 {
     sysutil_close(session->parent_fd);
     session->parent_fd = -1;
+    sysutil_activate_noblock(session->child_fd);
 }
 
 void close_child_context(struct ftpd_session *session)
 {
     sysutil_close(session->child_fd);
     session->child_fd = -1;
+    sysutil_activate_noblock(session->parent_fd);
 }
 
 void del_privilege()
@@ -58,7 +64,7 @@ void del_privilege()
     struct mystr nobody;
     struct sysutil_user *passwd = NULL;
 
-    str_alloc_text(&nobody,"nobody");
+    str_alloc_text(&nobody,tunable_nobody);
     passwd = sysutil_getpwnam(str_getbuf(&nobody));
     if(!passwd)
     {
@@ -83,11 +89,32 @@ void del_privilege()
     //sysutil_chroot(".");
 }
 
-
-void wait_req()
+void deal_private_req(struct ftpd_session *session)
 {
+    unsigned long  retval;
+    struct mystr strbuf;
+    private_str_alloc_memchunk(&str,strbuf.pbuf,FTPD_UNIXSOCK_LEN);
+
+    while(1)
+    {
+        retval = get_request_data(session->parent_fd,&strbuf);
+        if(!retval)
+        {
+
+        }
+        sysutil_memcpy(&retval,strbuf->pbuf,szieof(unsigned long));
+        switch(retval)
+        {
+        case PUNIXSOCKUSER:
+
+        case PUNXISOCKPASS:
+        }
+    }
+
 
 }
+
+
 
 
 

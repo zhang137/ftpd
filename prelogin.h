@@ -5,6 +5,6 @@
 #include "session.h"
 
 void init_connection(struct ftpd_session *session);
-struct mystr get_cmd_from_client(struct mystr *str_arg);
+struct mystr get_rpc_request(struct mystr *str_arg);
 
 #endif // PRELOGIN_H_INCLUDED

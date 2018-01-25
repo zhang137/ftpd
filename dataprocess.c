@@ -20,12 +20,14 @@ int get_netdata(struct mystr *str_line,char term)
     while(1)
     {
         nread = message_recv_peek(FTPD_CMDRDIO,&str,FTPD_CMDDATA_LEN);
-        sysutil_syslog(str.pbuf,LOG_INFO | LOG_USER);
-        if(!nread)
+        if(!nread) {
+            str_free(&str);
             return 0;
+        }
 
         retval = str_getline(&str,&line,&term_point);
         sysutil_syslog(line.pbuf,LOG_INFO | LOG_USER);
+
         if(retval)
         {
             nread = read_cmd_data(FTPD_CMDRDIO,&str,term_point+1);
@@ -35,6 +37,7 @@ int get_netdata(struct mystr *str_line,char term)
         else
         {
             read_cmd_data(FTPD_CMDRDIO,&str,nread);
+            str_free(&line);
             term_point = 0;
         }
 
@@ -44,10 +47,8 @@ int get_netdata(struct mystr *str_line,char term)
 int message_recv_peek(int fd,struct mystr *p_str,unsigned int datalen)
 {
     int retval;
-    while((retval = sysutil_recv_peek(FTPD_CMDRDIO,p_str->pbuf,datalen)) < 0)
+    if((retval = sysutil_recv_peek(FTPD_CMDRDIO,p_str->pbuf,datalen)) < 0)
     {
-        if(errno == EWOULDBLOCK || errno == EINTR)
-            continue;
         die("recv_peek");
     }
     p_str->alloc_bytes = retval;
@@ -63,6 +64,7 @@ void write_cmd_respond(int fd, unsigned resp_code,const char *resp_str)
     str_append_text(&str_respond,ptr_code);
     str_append_text(&str_respond,resp_str);
     write_cmd_data(fd,&str_respond,str_respond.num_len);
+    str_free(&str_respond);
 }
 
 void write_cmd_data(int fd,struct mystr *strbuf,unsigned int size)
@@ -75,11 +77,29 @@ void write_cmd_data(int fd,struct mystr *strbuf,unsigned int size)
 
 int read_cmd_data(int fd,struct mystr *strbuf,unsigned int size)
 {
-    int nread;
-    nread = sysutil_read_loop(fd,strbuf->pbuf,size);
-    if(nread < 0)
-        die("read");
-    return nread;
+    return sysutil_read_loop(fd,strbuf->pbuf,size);;
+}
+
+int get_request_data(int fd, struct mystr* strbuf)
+{
+    int retval;
+    retval = sysutil_read(fd,strbuf->pbuf,FTPD_UNIXSOCK_LEN);
+    if(!retval)
+        return 0;
+    strbuf->num_len = retval;
+    return retval;
+}
+
+void set_request_data(int fd, struct mystr* strbuf)
+{
+    int retval;
+    write_cmd_data(fd,strbuf,strbuf->pbuf);
+
+}
+
+int get_cmd_responds(int fd)
+{
+
 }
 
 

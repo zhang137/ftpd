@@ -49,7 +49,7 @@ void sysutil_install_null_sighandler(const enum EVSFSysUtilSignal sig)
     sigemptyset(&saction.sa_mask);
 
     saction.sa_flags = 0;
-    saction.sa_handler = NULL;
+    saction.sa_handler = SIG_IGN;
 
     switch(sig)
     {
@@ -308,12 +308,11 @@ filesize_t sysutil_get_file_offset(const int file_fd)
 int sysutil_read(const int fd, void* p_buf, const unsigned int size)
 {
     ssize_t nread;
-    nread = read(fd,p_buf,size);
-    if(nread <= 0)
+    while((nread = read(fd,p_buf,size)) < 0)
     {
         if(errno == EINTR || errno == EWOULDBLOCK)
-            return 0;
-        return -1;
+            continue;
+        die("read");
     }
     return nread;
 }
@@ -330,9 +329,7 @@ int sysutil_write(const int fd, const void* p_buf,const unsigned int size)
 
     return nwrite;
 }
-/* Reading and writing, with handling of interrupted system calls and partial
- * reads/writes. Slightly more usable than the standard UNIX API!
- */
+
 int sysutil_read_loop(const int fd, void* p_buf, unsigned int size)
 {
     int ntotal = size;
@@ -341,16 +338,13 @@ int sysutil_read_loop(const int fd, void* p_buf, unsigned int size)
     {
         ntmp = sysutil_read(fd,p_buf+nread,ntotal);
         if(ntmp == 0) {
-            continue;
-        }
-        if(ntmp < 0) {
-            return -1;//die("read");
+            return 0;
         }
         nread += ntmp;
         ntotal -= ntmp;
     }
 
-    return 0;
+    return nread;
 }
 int sysutil_write_loop(const int fd, const void* p_buf, unsigned int size)
 {

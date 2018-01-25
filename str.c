@@ -5,11 +5,11 @@
 void private_str_alloc_memchunk(struct mystr* p_str, const char* p_src,
                                 unsigned int len)
 {
-    p_str->pbuf = (char *)sysutil_malloc(len);
-    p_str->alloc_bytes = len;
+    p_str->pbuf = (char *)sysutil_malloc(len+1);
+    p_str->alloc_bytes = len+1;
     p_str->num_len = 0;
 
-    sysutil_memclr(p_str->pbuf,len);
+    sysutil_memclr(p_str->pbuf,len+1);
     if(p_src != NULL && (p_str->num_len = sysutil_strlen(p_src)))
     {
         sysutil_memcpy(p_str->pbuf,p_src,p_str->num_len);
@@ -34,7 +34,8 @@ void str_alloc_alt_term(struct mystr* p_str, const char* p_src, char term)
 {
     int strlen = sysutil_strlen(p_src);
     private_str_alloc_memchunk(p_str,p_src,strlen);
-    str_replace_char(p_str,'\r','\0');
+    p_str->pbuf[strlen-1] = term;
+    //str_replace_char(p_str,'\r','\0');
     p_str->num_len -= 1;
 
 }
@@ -42,6 +43,7 @@ void str_alloc_alt_term(struct mystr* p_str, const char* p_src, char term)
 void str_alloc_ulong(struct mystr* p_str, unsigned long the_ulong)
 {
     int ulong_size = sizeof(unsigned long);
+
     p_str->pbuf = sysutil_malloc(ulong_size);
     p_str->alloc_bytes = ulong_size;
     p_str->num_len = ulong_size;
@@ -50,7 +52,7 @@ void str_alloc_ulong(struct mystr* p_str, unsigned long the_ulong)
 }
 void str_alloc_filesize_t(struct mystr* p_str, filesize_t the_filesize)
 {
-     int filesize = sizeof(filesize_t);
+    int filesize = sizeof(filesize_t);
     p_str->pbuf = sysutil_malloc(filesize);
     p_str->alloc_bytes = filesize;
     p_str->num_len = filesize;
@@ -77,6 +79,7 @@ void str_free(struct mystr* p_str)
     p_str->alloc_bytes = 0;
     p_str->num_len = 0;
     sysutil_free(p_str->pbuf);
+    p_str->pbuf = NULL;
 }
 
 void str_trunc(struct mystr* p_str, unsigned int trunc_len)
@@ -329,6 +332,7 @@ void str_split_text(struct mystr* p_src, struct mystr* p_rhs,
 
     if(surplus_size)
     {
+
         p_rhs->pbuf = (char *)sysutil_malloc(surplus_size);
         p_rhs->alloc_bytes = surplus_size;
         p_rhs->num_len = surplus_size;
@@ -408,14 +412,11 @@ void str_left(const struct mystr* p_str, struct mystr* p_out,
 void str_right(const struct mystr* p_str, struct mystr* p_out,
                unsigned int chars)
 {
-    if(chars <= 0 ) return;
     if (chars > p_str->num_len)
         chars = p_str->num_len;
 
     int index = p_str->num_len - chars;
-    p_out->pbuf = sysutil_malloc(chars);
-    p_out->alloc_bytes = p_out->num_len = chars;
-    sysutil_memcpy(p_out->pbuf,p_str->pbuf+index,chars);
+    private_str_alloc_memchunk(p_out,p_str->pbuf+index,chars);
 
 }
 void str_mid_to_end(const struct mystr* p_str, struct mystr* p_out,
@@ -434,17 +435,38 @@ char str_get_char_at(const struct mystr* p_str, const unsigned int indexx)
 }
 int str_contains_space(const struct mystr* p_str)
 {
-}
-int str_all_space(const struct mystr* p_str)
-{
     int i;
     for(i = 0; i < p_str->num_len; i++)
     {
-        if(!sysutil_isspace(str_get_char_at(p_str,i)))
-            return 0;
+        if(sysutil_isspace(str_get_char_at(p_str,i)))
+            return 1;
     }
-    return 1;
+    return 0;
 }
+int str_all_space(const struct mystr* p_str)
+{
+    return str_isempty(p_str);
+}
+
+struct mystr str_wipeout_blank(struct mystr *p_str)
+{
+    int pos;
+    int strlen = str_getlen(p_str);
+    struct mystr strbuf = INIT_MYSTR;
+
+    for(pos = 0; pos < strlen; pos++)
+    {
+        if(!sysutil_isspace(str_get_char_at(p_str,pos)))
+            break;
+    }
+
+    str_right(p_str,&strbuf,strlen - pos);
+    str_free(p_str);
+
+    return strbuf;
+}
+
+
 int str_contains_unprintable(const struct mystr* p_str)
 {
     int i;
@@ -501,9 +523,9 @@ int str_getline(const struct mystr* p_str, struct mystr* p_line_str,
     }
     if(ipos < src_len)
     {
+        //123\r\n
         p_line_str->pbuf = sysutil_malloc(ipos+1);
         p_line_str->num_len = p_line_str->alloc_bytes = ipos;
-
         sysutil_memclr(p_line_str->pbuf,ipos+1);
         sysutil_memcpy(p_line_str->pbuf,p_str->pbuf,ipos);
         *p_pos = ipos;

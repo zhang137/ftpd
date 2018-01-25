@@ -1,16 +1,23 @@
 #ifndef FTPCMD_H_INCLUDED
 #define FTPCMD_H_INCLUDED
 
+#include "session.h"
+#include "str.h"
+
 /*
 *服务器在一个非标准端口上收听数据连接。
 */
-void handle_pasv();
+void handle_pasv(struct ftpd_session *session, struct mystr *str_arg);
 /*
 *远程系统上的用户名称
 */
-void handle_user();
+void handle_user(struct ftpd_session *session, struct mystr *str_arg);
 /*
 * 服务器中止上一次FTP服务命令及所有相关的数据传输。
+*/
+void handle_pass(struct ftpd_session *session, struct mystr *str_arg);
+/*
+*为数据连接指定一个IP地址和本地端口。
 */
 void handle_abot();
 /*
@@ -52,10 +59,6 @@ void handle_mode();
 void handle_noop();
 /*
 *向远程系统发送用户的密码，该命令在USER命令后使用。
-*/
-void handle_pass();
-/*
-*为数据连接指定一个IP地址和本地端口。
 */
 void handle_port();
 /*

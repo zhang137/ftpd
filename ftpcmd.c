@@ -4,17 +4,56 @@
 #include <syslog.h>
 #include "ftpcmd.h"
 #include "ftpcode.h"
+#include "commoncode.h"
 #include "dataprocess.h"
 
-void handle_pasv()
+void handle_pasv(struct ftpd_session *session, struct mystr *str_arg)
 {
 
 }
 
-void handle_user()
+void handle_user(struct ftpd_session *session, struct mystr *str_arg)
 {
+    if(!str_contains_unprintable(str_arg) || !str_all_space(str_arg))
+        session->user_str = *str_arg;
+
+    if(str_equal_text(str_arg,"ANONYMOUS"))
+    {
+
+    }
+    write_cmd_respond(FTPD_CMDWRIO,FTP_GIVEPWORD," Please specify user password.\n");
+}
+
+void handle_pass(struct ftpd_session *session, struct mystr *str_arg)
+{
+    struct mystr strbuf = INIT_MYSTR;
+    int retval;
+
+    if(str_isempty(&(session->user_str)))
+    {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_NEEDUSER," Please first login with USER.\n");
+        return;
+    }
+    if(!str_all_space(str_arg) || !str_contains_unprintable(str_arg))
+    {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINERR," The password contains illegal characters or is null.\n");
+    }
+
+    retval = get_cmd_responds(session->child_fd);
+    switch(retval)
+    {
+    case PUNIXSOCKLOGINFAIL:
+    {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINERR," Login incorrect.\n");
+        break;
+    }
+    case PUNIXSOCKLOGINOK:
+        write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINOK," Login successful.\n");
+    };
+
 
 }
+
 
 void handle_abot()
 {
@@ -57,11 +96,6 @@ void handle_mode()
 }
 
 void handle_noop()
-{
-
-}
-
-void handle_pass()
 {
 
 }
