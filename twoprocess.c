@@ -1,4 +1,6 @@
+#include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <errno.h>
 #include <syslog.h>
 #include "sysutil.h"
@@ -15,7 +17,8 @@ void twoprogress(struct ftpd_session *session)
 {
     int retval;
     set_private_unix_socket(session);
-
+    sysutil_install_null_sighandler(kVSFSysUtilSigCHLD);
+    sysutil_install_null_sighandler(kVSFSysUtilSigPIPE);
     write_cmd_respond(FTPD_CMDWRIO,FTP_GREET," Welcome to zyy's ftpd\n");
     retval = sysutil_fork();
 
@@ -24,6 +27,7 @@ void twoprogress(struct ftpd_session *session)
         close_child_context(session);
         while(1)
         {
+            sysutil_syslog("parent wait",LOG_INFO | LOG_USER);
             deal_private_req(session);
         }
     }
@@ -91,41 +95,28 @@ void del_privilege()
 
 void deal_private_req(struct ftpd_session *session)
 {
-    unsigned long  retval;
-    int ulong_size = sizeof(unsigned long);
-    struct mystr strbuf = INIT_MYSTR;
-    struct mystr str_user = INIT_MYSTR;
-    struct mystr str_pass = INIT_MYSTR;
-
-    private_str_alloc_memchunk(&strbuf,NULL,FTPD_UNIXSOCK_LEN);
+    int retval;
+    struct mystr str_buf = INIT_MYSTR;
+    char ptr_code[4];
+    private_str_alloc_memchunk(&str_buf,NULL,FTPD_UNIXSOCK_LEN);
 
     while(1)
     {
-        retval = get_request_data(session->parent_fd,&strbuf);
-        if(!retval) {
-
-        }
-        sysutil_memcpy(&retval,strbuf.pbuf,ulong_size);
+        retval = get_request_data(session->parent_fd,&str_buf);
+        retval = str_get_char_at(&str_buf,0);
 
         switch(retval)
         {
         case PUNIXSOCKLOGIN:
-            str_right(&strbuf,&str_user,ulong_size);
+            prepare_login(&str_buf,session);
             break;
         case PUNIXSOCKPWD:
-            str_right(&strbuf,&str_pass,ulong_size);
             break;
         }
-        if(!str_isempty(&str_user) && !str_isempty(&str_pass))
-            break;
     }
 
 }
 
-void prepare_login(struct mystr *str_arg,struct ftpd_session *session)
-{
-
-}
 
 
 

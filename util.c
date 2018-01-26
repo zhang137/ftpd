@@ -43,6 +43,7 @@ void standalone_socket(struct ftpd_session *session)
 
     sysutil_sockaddr_alloc_ipv4(&client_addr);
 
+    sysutil_install_null_sighandler(kVSFSysUtilSigCHLD);
     while(1)
     {
         client_fd = sysutil_accept_timeout(listen_fd,client_addr,0);

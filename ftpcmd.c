@@ -14,7 +14,7 @@ void handle_pasv(struct ftpd_session *session, struct mystr *str_arg)
 
 void handle_user(struct ftpd_session *session, struct mystr *str_arg)
 {
-    if(!str_contains_unprintable(str_arg) || !str_all_space(str_arg))
+    if(!str_contains_unprintable(str_arg) || !str_all_space(str_arg) || str_getlen(str_arg) > 128)
         session->user_str = *str_arg;
 
     if(str_equal_text(str_arg,"ANONYMOUS"))
@@ -27,24 +27,23 @@ void handle_user(struct ftpd_session *session, struct mystr *str_arg)
 void handle_pass(struct ftpd_session *session, struct mystr *str_arg)
 {
     int retval;
-    struct mystr strbuf = INIT_MYSTR;
-
-    if(str_isempty(&(session->user_str)))
+    if(str_isempty(&session->user_str))
     {
         write_cmd_respond(FTPD_CMDWRIO,FTP_NEEDUSER," Please first login with USER.\n");
         return;
     }
-    if(!str_all_space(str_arg) || !str_contains_unprintable(str_arg))
+    if(str_all_space(str_arg) || str_contains_unprintable(str_arg))
     {
         write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINERR," The password contains illegal characters or is null.\n");
         return;
     }
 
-    if(str_getlen(&str_arg) > 128)
+    if(str_getlen(str_arg) > 128)
     {
         write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINERR," The password is too long");
         return ;
     }
+    set_request_data(session->child_fd,str_arg,&session->user_str);
 
     retval = get_cmd_responds(session->child_fd);
     switch(retval)

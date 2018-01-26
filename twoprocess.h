@@ -13,6 +13,4 @@ void close_child_context(struct ftpd_session *session);
 
 void del_privilege();
 
-void prepare_login(struct mystr *str_arg,struct ftpd_session *session);
-
 #endif // TWOPROCESS_H_INCLUDED

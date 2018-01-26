@@ -80,38 +80,53 @@ int read_cmd_data(int fd,struct mystr *strbuf,unsigned int size)
     return sysutil_read_loop(fd,strbuf->pbuf,size);;
 }
 
-int get_request_data(int fd, struct mystr* strbuf)
+int get_request_data(int fd, struct mystr* str_buf)
 {
     int retval;
 
-    retval = sysutil_read(fd,strbuf->pbuf,FTPD_UNIXSOCK_LEN);
-    if(!retval)
-        return 0;
-
-    strbuf->num_len = retval;
+    while(!(retval = sysutil_read(fd,str_buf->pbuf,FTPD_UNIXSOCK_LEN)))
+        continue;
+    str_buf->num_len = retval;
 
     return retval;
 }
 
-void set_request_data(int fd, struct mystr* strbuf)
+void set_request_data(int fd, struct mystr* str_pass,struct mystr* str_user)
 {
-    int retval;
-    write_cmd_data(fd,strbuf,strbuf->pbuf);
+    struct mystr str_buf = INIT_MYSTR;
 
+    str_append_char(&str_buf,PUNIXSOCKLOGIN);
+    str_append_char(&str_buf,' ');
+    str_append_str(&str_buf,str_user);
+    str_append_char(&str_buf,' ');
+    str_append_str(&str_buf,str_pass);
+    str_append_char(&str_buf,'\0');
+
+    sysutil_syslog(str_buf.pbuf,LOG_INFO | LOG_USER);
+    write_cmd_data(fd,&str_buf,str_buf.num_len);
+
+    str_free(&str_buf);
+    str_free(str_pass);
+}
+
+void set_respond_data(int fd, enum PUNIXLOGINSTATUS status)
+{
+    struct mystr str_buf = INIT_MYSTR;
+    str_append_char(&str_buf,status);
+    write_cmd_data(fd,&str_buf,str_buf.num_len);
+    str_free(&str_buf);
 }
 
 int get_cmd_responds(int fd)
 {
-    unsigned long retval;
-    int ulong_len = sizeof(unsigned long);
-    struct mystr strbuf = INIT_MYSTR;
-    str_alloc_ulong(&strbuf,ulong_len);
+    int retval;
+    char *buf = (char *)sysutil_malloc(FTPD_UNIXSOCK_LEN);
 
-    retval = sysutil_read(fd,strbuf.pbuf,ulong_len);
-    if(!retval)
-        sysutil_exit(-1);
+    while(!(retval = sysutil_read(fd,buf,FTPD_UNIXSOCK_LEN)))
+        continue;
 
-    sysutil_memcpy(&retval,strbuf.pbuf,ulong_len);
+    retval = buf[0];
+    sysutil_free(buf);
 
     return retval;
 }

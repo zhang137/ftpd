@@ -51,7 +51,7 @@
 	<stdlib.h>
 	"strlist.h"
 
-1516868787 source:/home/usr/projects/ftp/ftpd/ftpcmd.c
+1516957585 source:/home/usr/projects/ftp/ftpd/ftpcmd.c
 	<stdio.h>
 	<stdlib.h>
 	<unistd.h>
@@ -65,7 +65,7 @@
 	"session.h"
 	"str.h"
 
-1516761584 source:/home/usr/projects/ftp/ftpd/main.c
+1516929211 source:/home/usr/projects/ftp/ftpd/main.c
 	<stdio.h>
 	<syslog.h>
 	"session.h"
@@ -94,10 +94,11 @@
 1516863914 /home/usr/projects/ftp/ftpd/str.h
 	"filesize.h"
 
-1516868674 source:/home/usr/projects/ftp/ftpd/str.c
+1516957028 source:/home/usr/projects/ftp/ftpd/str.c
 	<stdio.h>
 	"str.h"
 	"sysutil.h"
+	<syslog.h>
 
 1516613012 source:/home/usr/projects/ftp/ftpd/strlist.c
 	<stdlib.h>
@@ -113,7 +114,7 @@
 	<unistd.h>
 	"sysutil.h"
 
-1516868227 source:/home/usr/projects/ftp/ftpd/sysutil.c
+1516957390 source:/home/usr/projects/ftp/ftpd/sysutil.c
 	<stdio.h>
 	<stdlib.h>
 	<sys/types.h>
@@ -221,7 +222,7 @@
 
 1516157670 /home/usr/projects/ftp/ftpd/controlprocess.h
 
-1516868227 source:/home/usr/projects/ftp/ftpd/dataprocess.c
+1516959036 source:/home/usr/projects/ftp/ftpd/dataprocess.c
 	<stdio.h>
 	<stdlib.h>
 	<unistd.h>
@@ -232,11 +233,14 @@
 	"commoncode.h"
 	"ftpcode.h"
 
-1516859158 /home/usr/projects/ftp/ftpd/dataprocess.h
+1516956505 /home/usr/projects/ftp/ftpd/dataprocess.h
+	"commoncode.h"
 	"str.h"
 
-1516861548 source:/home/usr/projects/ftp/ftpd/twoprocess.c
+1516958927 source:/home/usr/projects/ftp/ftpd/twoprocess.c
+	<stdio.h>
 	<stdlib.h>
+	<unistd.h>
 	<errno.h>
 	<syslog.h>
 	"sysutil.h"
@@ -246,11 +250,13 @@
 	"ftpcode.h"
 	"commoncode.h"
 
-1516870445 /home/usr/projects/ftp/ftpd/twoprocess.h
+1516932126 /home/usr/projects/ftp/ftpd/twoprocess.h
 	"session.h"
 
-1516868804 source:/home/usr/projects/ftp/ftpd/prelogin.c
+1516958756 source:/home/usr/projects/ftp/ftpd/prelogin.c
 	<stdio.h>
+	<stdlib.h>
+	<unistd.h>
 	<syslog.h>
 	"sysutil.h"
 	"prelogin.h"
@@ -258,7 +264,7 @@
 	"commoncode.h"
 	"ftpcmd.h"
 
-1516848045 /home/usr/projects/ftp/ftpd/prelogin.h
+1516932138 /home/usr/projects/ftp/ftpd/prelogin.h
 	"str.h"
 	"session.h"
 
@@ -278,14 +284,14 @@
 1516670680 /home/usr/projects/ftp/ftpd/util.h
 	"session.h"
 
-1516766198 source:/home/usr/projects/ftp/ftpd/util.c
+1516958951 source:/home/usr/projects/ftp/ftpd/util.c
 	<stdio.h>
 	<syslog.h>
 	"sysutil.h"
 	"util.h"
 	"commoncode.h"
 
-1516867765 /home/usr/projects/ftp/ftpd/commoncode.h
+1516958776 /home/usr/projects/ftp/ftpd/commoncode.h
 
 1515460521 /home/usr/projects/ftp/ftpd/ls.h
 

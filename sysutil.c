@@ -319,6 +319,7 @@ int sysutil_read(const int fd, void* p_buf, const unsigned int size)
 int sysutil_write(const int fd, const void* p_buf,const unsigned int size)
 {
     ssize_t nwrite;
+
     nwrite = write(fd,p_buf,size);
     if(nwrite <= 0)
     {
@@ -326,7 +327,6 @@ int sysutil_write(const int fd, const void* p_buf,const unsigned int size)
             return 0;
         return -1;
     }
-
     return nwrite;
 }
 
@@ -667,7 +667,7 @@ void sysutil_memclr(void* p_dest, unsigned int size)
 void sysutil_memcpy(void* p_dest, const void* p_src,
                         const unsigned int size)
 {
-    if(p_dest == p_src)
+    if(p_dest == p_src || !size)
         return;
     memcpy(p_dest,p_src,size);
 }
@@ -875,8 +875,7 @@ struct sysutil_socketpair_retval
     res = socketpair(AF_UNIX,SOCK_STREAM,0,fd);
     if(res < 0)
     {
-        //die("sockpair")
-        return ret;
+        //die("sockpair");
     }
     ret.socket_one = fd[0];
     ret.socket_two = fd[1];

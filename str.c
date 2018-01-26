@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "str.h"
 #include "sysutil.h"
+#include <syslog.h>
 
 void private_str_alloc_memchunk(struct mystr* p_str, const char* p_src,
                                 unsigned int len)
@@ -201,12 +202,16 @@ void str_append_char(struct mystr* p_str, char the_char)
     int num_len = p_str->num_len;
     int char_size = sizeof(char);
     int left_len = p_str->alloc_bytes - num_len;
+
     if(left_len <= char_size)
     {
         str_rpad(p_str,1);
     }
+
     sysutil_memcpy(p_str->pbuf+num_len,&the_char,char_size);
-    p_str->num_len += char_size;
+
+    if(the_char != '\0')
+        p_str->num_len += char_size;
 }
 
 void str_append_double(struct mystr* p_str, double the_double)
@@ -235,6 +240,7 @@ void str_rpad(struct mystr* p_str, const unsigned int min_width)
 {
     int adjust_len = p_str->alloc_bytes + min_width;
     void *ptr_tmp = sysutil_malloc(adjust_len);
+
     sysutil_memclr(ptr_tmp,adjust_len);
     sysutil_memcpy(ptr_tmp,p_str->pbuf,p_str->num_len);
     sysutil_free(p_str->pbuf);
@@ -470,14 +476,12 @@ struct mystr str_wipeout_blank(struct mystr *p_str)
 int str_contains_unprintable(const struct mystr* p_str)
 {
     int i;
-    if(p_str->num_len > 0)
+    for(i = 0; i < p_str->num_len; i++)
     {
-        for(i = 0; i < p_str->num_len; i++)
-        {
-            if(!sysutil_isprint(p_str->pbuf[i]))
-                return 1;
-        }
+    if(!sysutil_isprint(p_str->pbuf[i]))
+            return 1;
     }
+
     return 0;
 }
 void str_replace_unprintable(struct mystr* p_str, char new_char)
