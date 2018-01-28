@@ -19,6 +19,7 @@ void twoprogress(struct ftpd_session *session)
     set_private_unix_socket(session);
     sysutil_install_null_sighandler(kVSFSysUtilSigCHLD);
     sysutil_install_null_sighandler(kVSFSysUtilSigPIPE);
+
     write_cmd_respond(FTPD_CMDWRIO,FTP_GREET," Welcome to zyy's ftpd\n");
     retval = sysutil_fork();
 
@@ -103,15 +104,22 @@ void deal_private_req(struct ftpd_session *session)
     while(1)
     {
         retval = get_request_data(session->parent_fd,&str_buf);
-        retval = str_get_char_at(&str_buf,0);
-
-        switch(retval)
+        if(retval)
         {
-        case PUNIXSOCKLOGIN:
-            prepare_login(&str_buf,session);
-            break;
-        case PUNIXSOCKPWD:
-            break;
+            retval = str_get_char_at(&str_buf,0);
+            switch(retval)
+            {
+            case PUNIXSOCKLOGIN:
+                prepare_login(&str_buf,session);
+                break;
+            case PUNIXSOCKPWD:
+                break;
+            }
+        }
+        if(sysutil_wait_reap_one())
+            sysutil_exit(0);
+        else{
+            sysutil_exit(-1);
         }
     }
 

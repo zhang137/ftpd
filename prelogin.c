@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <syslog.h>
+#include <shadow.h>
 #include "sysutil.h"
 #include "prelogin.h"
 #include "ftpcode.h"
@@ -26,7 +27,7 @@ void init_connection(struct ftpd_session *session)
             handle_pass(session,&str_arg);
         }
         else if(str_equal_text(&str_cmd,"SYST")) {
-            handle_syst();
+            handle_syst(session);
         }
         else if(str_equal_text(&str_cmd,"QUIT")) {
             handle_quit();
@@ -80,10 +81,8 @@ void prepare_login(struct mystr *str_arg,struct ftpd_session *session)
     str_free(str_arg);
 
     str_split_char(&str_user,&str_pass,' ');
-    str_append_char(&str_pass,'\0');
-    str_append_char(&str_user,'\0');
 
-    struct sysutil_user *passwd = sysutil_getpwnam(str_user.pbuf);
+    struct spwd *passwd = getspnam(str_user.pbuf);
     if(!passwd)
     {
         sysutil_syslog("getpwnam error",LOG_INFO | LOG_USER);
@@ -91,43 +90,34 @@ void prepare_login(struct mystr *str_arg,struct ftpd_session *session)
         return;
     }
 
-    char salt[2];
-    struct mystr crypt_str = INIT_MYSTR;
-    sysutil_memcpy(salt,passwd->pw_passwd,2);
-
-    sysutil_syslog("crypt func",LOG_INFO | LOG_USER);
-
-    //str_alloc_text(&crypt_str,crypt(str_pass.pbuf,salt));
-    //str_free(&str_pass);
-    //str_alloc_text(&str_pass,passwd->pw_passwd);
-
-    sysutil_syslog("getpassed successed",LOG_INFO | LOG_USER);
-
-//    if(!str_strcmp(&str_pass,&str_pass))
-//    {
-//        sysutil_syslog("passwd error",LOG_INFO | LOG_USER);
-//        set_respond_data(session->parent_fd,PUNIXSOCKLOGINFAIL);
-//        return;
-//    }
+    if(sysutil_strcmp(passwd->sp_pwdp, (char*)crypt(str_pass.pbuf, passwd->sp_pwdp)))
+    {
+        set_respond_data(session->parent_fd,PUNIXSOCKLOGINFAIL);
+        return;
+    }
 
     set_respond_data(session->parent_fd,PUNIXSOCKLOGINOK);
     str_free(&str_pass);
 
     int retval;
-    set_private_unix_socket(session);
-    retval = sysutil_fork();
+    struct sysutil_user *pass = sysutil_getpwnam(str_user.pbuf);
 
+    set_private_unix_socket(session);
+
+    retval = sysutil_fork();
     if(retval)
     {
+        sysutil_install_null_sighandler(kVSFSysUtilSigCHLD);
+        sysutil_install_null_sighandler(kVSFSysUtilSigPIPE);
         close_child_context(session);
         struct mystr str_home = INIT_MYSTR;
-        str_alloc_text(&str_home,passwd->pw_dir);
+        str_alloc_text(&str_home,pass->pw_dir);
 
-        sysutil_seteuid_numeric(passwd->pw_uid);
-        sysutil_setegid_numeric(passwd->pw_gid);
-        sysutil_chdir(passwd->pw_dir);
+        sysutil_seteuid_numeric(pass->pw_uid);
+        sysutil_setegid_numeric(pass->pw_gid);
+        sysutil_chdir(pass->pw_dir);
 
-        session->passwd_str = crypt_str;
+        //session->passwd_str = crypt_str;
         session->user_str = str_user;
         session->home_str = str_home;
 
@@ -138,7 +128,7 @@ void prepare_login(struct mystr *str_arg,struct ftpd_session *session)
     }
     close_parent_context(session);
     del_privilege();
-    while(1 );
+    while(1) ;
 
 
 }

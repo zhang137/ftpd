@@ -14,14 +14,13 @@ int main()
         INIT_MYSTR, 0, NULL, 0, INIT_MYSTR,
         INIT_MYSTR, INIT_MYSTR, 0, 0, 0, 0,
         INIT_MYSTR, INIT_MYSTR, 0, 0, 0, 0,
-        INIT_MYSTR, 0
+        INIT_MYSTR, 1
     };
 
     session.idle_timeout = 20;
     session.data_timeout = 30;
     session.is_anonymous = 0;
 
-    sysutil_install_null_sighandler(kVSFSysUtilSigCHLD);
 
     standalone_socket(&session);
     sysutil_openlog(LOG_DAEMON);

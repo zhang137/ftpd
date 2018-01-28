@@ -43,6 +43,7 @@ void handle_pass(struct ftpd_session *session, struct mystr *str_arg)
         write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINERR," The password is too long");
         return ;
     }
+
     set_request_data(session->child_fd,str_arg,&session->user_str);
 
     retval = get_cmd_responds(session->child_fd);
@@ -53,8 +54,10 @@ void handle_pass(struct ftpd_session *session, struct mystr *str_arg)
         break;
     case PUNIXSOCKLOGINOK:
         write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINOK," Login successful.\n");
-        sysutil_exit(0);
+        session->login_fails = 0;
     };
+
+
         // todo
 }
 
@@ -111,6 +114,7 @@ void handle_port()
 void handle_quit()
 {
     write_cmd_respond(FTPD_CMDWRIO,FTP_GOODBYE," GoodBye.\n");
+    sysutil_exit(0);
 }
 
 void handle_rest()
@@ -147,13 +151,19 @@ void handle_appe()
 
 }
 
-void handle_syst()
+void handle_syst(struct ftpd_session *session)
 {
+
     const char *p_src = NULL;
     p_src = sysutil_uname();
     syslog(LOG_INFO | LOG_USER,p_src);
     write_cmd_respond(FTPD_CMDWRIO,FTP_SYSTOK,p_src);
     sysutil_free(p_src);
+
+    if(!session->login_fails)
+    {
+        sysutil_exit(0);
+    }
 }
 
 

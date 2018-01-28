@@ -57,19 +57,19 @@ void sysutil_install_null_sighandler(const enum EVSFSysUtilSignal sig)
         sigaction(SIGALRM,&saction,NULL);
         break;
     case  kVSFSysUtilSigTERM:
-        sigaction(SIGALRM,&saction,NULL);
+        sigaction(SIGTERM,&saction,NULL);
         break;
     case  kVSFSysUtilSigCHLD:
-        sigaction(SIGALRM,&saction,NULL);
+        sigaction(SIGCHLD,&saction,NULL);
         break;
     case  kVSFSysUtilSigPIPE:
-        sigaction(SIGALRM,&saction,NULL);
+        sigaction(SIGPIPE,&saction,NULL);
         break;
     case  kVSFSysUtilSigURG:
-        sigaction(SIGALRM,&saction,NULL);
+        sigaction(SIGURG,&saction,NULL);
         break;
     case  kVSFSysUtilSigHUP:
-        sigaction(SIGALRM,&saction,NULL);
+        sigaction(SIGHUP,&saction,NULL);
     };
 
 }
@@ -86,25 +86,25 @@ void sysutil_install_sighandler(const enum EVSFSysUtilSignal sig,
     saction.sa_flags = 0;
     saction.sa_handler = handler;
 
-    switch(sig)
+     switch(sig)
     {
     case  kVSFSysUtilSigALRM:
         sigaction(SIGALRM,&saction,NULL);
         break;
     case  kVSFSysUtilSigTERM:
-        sigaction(SIGALRM,&saction,NULL);
+        sigaction(SIGTERM,&saction,NULL);
         break;
     case  kVSFSysUtilSigCHLD:
-        sigaction(SIGALRM,&saction,NULL);
+        sigaction(SIGCHLD,&saction,NULL);
         break;
     case  kVSFSysUtilSigPIPE:
-        sigaction(SIGALRM,&saction,NULL);
+        sigaction(SIGPIPE,&saction,NULL);
         break;
     case  kVSFSysUtilSigURG:
-        sigaction(SIGALRM,&saction,NULL);
+        sigaction(SIGURG,&saction,NULL);
         break;
     case  kVSFSysUtilSigHUP:
-        sigaction(SIGALRM,&saction,NULL);
+        sigaction(SIGHUP,&saction,NULL);
     };
 }
 void sysutil_install_async_sighandler(const enum EVSFSysUtilSignal sig,
@@ -612,38 +612,47 @@ void sysutil_exit(int exit_code)
 
 struct sysutil_wait_retval sysutil_wait(void)
 {
+    int status;
+    pid_t pid;
     struct sysutil_wait_retval ret;
 
-    //ret.
+    pid = waitpid(-1,&status,WNOHANG);
+    if(pid < 0)
+    {
+        die("waitpid");
+    }
+
+    ret.exit_status = status;
+    ret.syscall_retval = pid;
 
     return ret;
 }
 int sysutil_wait_reap_one(void)
 {
-    int status;
-    pid_t pid;
-    pid = wait(&status);
-    if(pid < 0)
-    {
+    pid_t pid = 0;
+    struct sysutil_wait_retval retval;
 
+    retval = sysutil_wait();
+    if(pid = sysutil_wait_get_retval(&retval))
+    {
+        if(!sysutil_wait_exited_normally(&retval))
+            pid = 0;
     }
+
     return pid;
 }
 int sysutil_wait_get_retval(
   const struct sysutil_wait_retval* p_waitret)
 {
-
-    return 0;
+    return p_waitret->syscall_retval;
 }
-int sysutil_wait_exited_normally(
-  const struct sysutil_wait_retval* p_waitret)
+int sysutil_wait_exited_normally(const struct sysutil_wait_retval* p_waitret)
 {
-    return 0;
+    return WIFEXITED(sysutil_wait_get_exitcode(p_waitret));
 }
-int sysutil_wait_get_exitcode(
-  const struct sysutil_wait_retval* p_waitret)
+int sysutil_wait_get_exitcode(const struct sysutil_wait_retval* p_waitret)
 {
-    return 0;
+    return p_waitret->exit_status;
 }
 
 /* Various string functions */

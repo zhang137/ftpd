@@ -84,8 +84,7 @@ int get_request_data(int fd, struct mystr* str_buf)
 {
     int retval;
 
-    while(!(retval = sysutil_read(fd,str_buf->pbuf,FTPD_UNIXSOCK_LEN)))
-        continue;
+    retval = sysutil_read(fd,str_buf->pbuf,FTPD_UNIXSOCK_LEN);
     str_buf->num_len = retval;
 
     return retval;

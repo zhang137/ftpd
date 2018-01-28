@@ -290,9 +290,11 @@ void str_split_char(struct mystr* p_src, struct mystr* p_rhs, char c)
     surplus_size = str_len - ipos - 1;
     if(surplus_size > 0)
     {
-        p_rhs->pbuf = sysutil_malloc(surplus_size);
+        p_rhs->pbuf = sysutil_malloc(surplus_size+1);
+        sysutil_memclr(p_rhs->pbuf,surplus_size+1);
         sysutil_memcpy(p_rhs->pbuf,p_src->pbuf+ipos+1,surplus_size);
-        p_rhs->num_len = p_rhs->alloc_bytes = surplus_size;
+        p_rhs->num_len = surplus_size;
+        p_rhs->alloc_bytes = surplus_size;
     }
     sysutil_memclr(p_src->pbuf+ipos,surplus_size+1);
     p_src->num_len = ipos;

@@ -96,7 +96,7 @@ void handle_appe();
 /*
 *
 */
-void handle_syst();
+void handle_syst(struct ftpd_session *session);
 
 
 
