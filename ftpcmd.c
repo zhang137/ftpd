@@ -14,12 +14,17 @@ void handle_pasv(struct ftpd_session *session, struct mystr *str_arg)
 
 void handle_user(struct ftpd_session *session, struct mystr *str_arg)
 {
-    if(!str_contains_unprintable(str_arg) || !str_all_space(str_arg) || str_getlen(str_arg) > 128)
-        session->user_str = *str_arg;
-
-    if(str_equal_text(str_arg,"ANONYMOUS"))
+    if(!str_contains_unprintable(str_arg) || !str_all_space(str_arg) || str_getlen(str_arg) < 128)
     {
-
+        if(!str_isempty(&session->user_str))
+        {
+            str_free(&session->user_str);
+        }
+        session->user_str  = *str_arg;
+    }
+    if(!str_isempty(&session->passwd_str))
+    {
+        str_free(&session->passwd_str);
     }
     write_cmd_respond(FTPD_CMDWRIO,FTP_GIVEPWORD," Please specify user password.\n");
 }
@@ -32,16 +37,10 @@ void handle_pass(struct ftpd_session *session, struct mystr *str_arg)
         write_cmd_respond(FTPD_CMDWRIO,FTP_NEEDUSER," Please first login with USER.\n");
         return;
     }
-    if(str_all_space(str_arg) || str_contains_unprintable(str_arg))
-    {
-        write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINERR," The password contains illegal characters or is null.\n");
-        return;
-    }
 
-    if(str_getlen(str_arg) > 128)
+    if(str_equal_text(&session->user_str,"ANONYMOUS"))
     {
-        write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINERR," The password is too long");
-        return ;
+        str_empty(str_arg);
     }
 
     set_request_data(session->child_fd,str_arg,&session->user_str);
@@ -50,17 +49,20 @@ void handle_pass(struct ftpd_session *session, struct mystr *str_arg)
     switch(retval)
     {
     case PUNIXSOCKLOGINFAIL:
-        write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINOK," Login incorrect.\n");
+        write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINERR," Login incorrect.\n");
+        session->login_fails = 1;
         break;
     case PUNIXSOCKLOGINOK:
         write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINOK," Login successful.\n");
         session->login_fails = 0;
+        break;
     };
+    str_free(str_arg);
 
+    sysutil_close(session->child_fd);
+    session->child_fd = -1;
 
-        // todo
 }
-
 
 void handle_abot()
 {
@@ -153,17 +155,16 @@ void handle_appe()
 
 void handle_syst(struct ftpd_session *session)
 {
-
-    const char *p_src = NULL;
-    p_src = sysutil_uname();
-    syslog(LOG_INFO | LOG_USER,p_src);
-    write_cmd_respond(FTPD_CMDWRIO,FTP_SYSTOK,p_src);
-    sysutil_free(p_src);
-
     if(!session->login_fails)
     {
+        const char *p_src = NULL;
+        p_src = sysutil_uname();
+        write_cmd_respond(FTPD_CMDWRIO,FTP_SYSTOK,p_src);
+
+        sysutil_free(p_src);
         sysutil_exit(0);
     }
+    write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINERR,"  Please login with USER and PASS.\n");
 }
 
 

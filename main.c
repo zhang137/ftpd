@@ -14,7 +14,7 @@ int main()
         INIT_MYSTR, 0, NULL, 0, INIT_MYSTR,
         INIT_MYSTR, INIT_MYSTR, 0, 0, 0, 0,
         INIT_MYSTR, INIT_MYSTR, 0, 0, 0, 0,
-        INIT_MYSTR, 1
+        INIT_MYSTR, 0
     };
 
     session.idle_timeout = 20;

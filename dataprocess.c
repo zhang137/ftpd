@@ -32,6 +32,8 @@ int get_netdata(struct mystr *str_line,char term)
         {
             nread = read_cmd_data(FTPD_CMDRDIO,&str,term_point+1);
             sysutil_memcpy(str_line,&line,sizeof(line));
+
+            str_free(&str);
             return term_point;
         }
         else
@@ -80,14 +82,13 @@ int read_cmd_data(int fd,struct mystr *strbuf,unsigned int size)
     return sysutil_read_loop(fd,strbuf->pbuf,size);;
 }
 
-int get_request_data(int fd, struct mystr* str_buf)
+void get_request_data(int fd, struct mystr* str_buf)
 {
     int retval;
 
     retval = sysutil_read(fd,str_buf->pbuf,FTPD_UNIXSOCK_LEN);
     str_buf->num_len = retval;
 
-    return retval;
 }
 
 void set_request_data(int fd, struct mystr* str_pass,struct mystr* str_user)
@@ -105,7 +106,6 @@ void set_request_data(int fd, struct mystr* str_pass,struct mystr* str_user)
     write_cmd_data(fd,&str_buf,str_buf.num_len);
 
     str_free(&str_buf);
-    str_free(str_pass);
 }
 
 void set_respond_data(int fd, enum PUNIXLOGINSTATUS status)

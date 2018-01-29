@@ -17,14 +17,14 @@ void twoprogress(struct ftpd_session *session)
 {
     int retval;
     set_private_unix_socket(session);
-    sysutil_install_null_sighandler(kVSFSysUtilSigCHLD);
-    sysutil_install_null_sighandler(kVSFSysUtilSigPIPE);
 
     write_cmd_respond(FTPD_CMDWRIO,FTP_GREET," Welcome to zyy's ftpd\n");
     retval = sysutil_fork();
 
     if(retval)
     {
+        sysutil_install_null_sighandler(kVSFSysUtilSigCHLD);
+        sysutil_install_null_sighandler(kVSFSysUtilSigPIPE);
         close_child_context(session);
         while(1)
         {
@@ -91,40 +91,48 @@ void del_privilege()
 
     sysutil_chdir(passwd->pw_dir);
 
-    //sysutil_chroot(".");
+    sysutil_chroot(".");
 }
 
 void deal_private_req(struct ftpd_session *session)
 {
-    int retval;
     struct mystr str_buf = INIT_MYSTR;
-    char ptr_code[4];
-    private_str_alloc_memchunk(&str_buf,NULL,FTPD_UNIXSOCK_LEN);
 
     while(1)
     {
-        retval = get_request_data(session->parent_fd,&str_buf);
-        if(retval)
-        {
-            retval = str_get_char_at(&str_buf,0);
-            switch(retval)
-            {
-            case PUNIXSOCKLOGIN:
-                prepare_login(&str_buf,session);
-                break;
-            case PUNIXSOCKPWD:
-                break;
-            }
-        }
+        private_str_alloc_memchunk(&str_buf,NULL,FTPD_UNIXSOCK_LEN);
+        get_request_data(session->parent_fd,&str_buf);
+
+        if(parse_cmd(session,&str_buf))
+            break;
+
         if(sysutil_wait_reap_one())
             sysutil_exit(0);
-        else{
-            sysutil_exit(-1);
-        }
     }
 
+    ready_to_login(session);
 }
 
+int parse_cmd(struct ftpd_session *session, struct mystr *p_str)
+{
+    int cmd;
+    int retval = 0;
+
+    if(!p_str->num_len)
+        return retval;
+
+    cmd = str_get_char_at(p_str,0);
+    switch(cmd)
+    {
+    case PUNIXSOCKLOGIN:
+        retval = prepare_login(p_str,session);
+        break;
+    case PUNIXSOCKPWD:
+        break;
+    }
+
+    return retval;
+}
 
 
 

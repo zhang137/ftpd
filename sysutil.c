@@ -573,7 +573,8 @@ void* sysutil_realloc(void* p_ptr, unsigned int size)
 }
 void sysutil_free(void* p_ptr)
 {
-    free(p_ptr);
+    if(p_ptr != NULL)
+        free(p_ptr);
 }
 
 /* Process creation/exit/process handling */
@@ -636,7 +637,7 @@ int sysutil_wait_reap_one(void)
     if(pid = sysutil_wait_get_retval(&retval))
     {
         if(!sysutil_wait_exited_normally(&retval))
-            pid = 0;
+            sysutil_exit(-1);
     }
 
     return pid;

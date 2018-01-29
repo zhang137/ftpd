@@ -31,7 +31,7 @@ void util_ls(const char *ptrPath)
     struct sysutil_user *p_pwd;
     struct sysutil_group  *p_grp;
     char *entries_permission;
-    //char *dir_entries[50];
+
     int entry_size,j = 0;
     double total_size = 0;
     int linknum_align = 0,filesize_align = 0;
