@@ -153,27 +153,41 @@ void sysutil_clear_alarm(void)
 char* sysutil_getcwd(char* p_dest, const unsigned int buf_size)
 {
     char *p_retval;
-    if(buf_size == 0)
-        return p_dest;
     p_retval = getcwd(p_dest,buf_size);
-    p_retval[buf_size] = '\0';
+
     return p_retval;
 }
 int sysutil_mkdir(const char* p_dirname, const unsigned int mode)
 {
-    return mkdir(p_dirname,mode);
+    int retval;
+    retval = mkdir(p_dirname,mode);
+    if(retval < 0)
+        die("mkdir");
+    return retval;
 }
 int sysutil_rmdir(const char* p_dirname)
 {
-    return rmdir(p_dirname);
+    int retval;
+    retval = rmdir(p_dirname);
+    if(retval < 0)
+        die("rmdir");
+    return retval;
 }
 int sysutil_chdir(const char* p_dirname)
 {
-    return chdir(p_dirname);
+    int retval;
+    retval = chdir(p_dirname);
+    if(retval < 0)
+        die("chdir");
+    return retval;
 }
 int sysutil_rename(const char* p_from, const char* p_to)
 {
-    return rename(p_from,p_to);
+    int retval;
+    retval = rename(p_from,p_to);
+    if(retval < 0)
+        die("rename");
+    return retval;
 }
 
 struct sysutil_dir* sysutil_opendir(const char* p_dirname)
@@ -186,7 +200,7 @@ void sysutil_closedir(struct sysutil_dir* p_dir)
 {
     int ret = closedir(p_dir);
     if(ret < 0);
-        //die("closedir");
+        die("closedir");
 }
 
 void sysutil_rewinddir(struct sysutil_dir *p_dir)
@@ -1011,42 +1025,36 @@ int sysutil_connect_timeout(int fd,
                                 const struct sysutil_sockaddr* p_sockaddr,
                                 unsigned int wait_seconds)
 {
-    int res,error;
+    int res,save_errno;
     struct timeval tv;
     gettimeofday(&tv,NULL);
     res = connect(fd,&p_sockaddr->u.u_sockaddr,sizeof(*p_sockaddr));
-    if(res < 0)
-    {
-       if (errno != EINPROGRESS)
-           return -1;
-    }else {
+    if(res == 0) {
         return 0;
     }
-    tv.tv_sec = wait_seconds - tv.tv_sec;
-    tv.tv_usec = 0;
-    fd_set rfdset;
-    fd_set wfdset;
 
-
-    FD_ZERO(&rfdset);
-    FD_ZERO(&wfdset);
-
-    FD_SET(fd,&rfdset);
-    FD_SET(fd,&wfdset);
-
-    res = select(fd+1,&rfdset,&wfdset,NULL,&tv);
-    if(res > 0)
+    if( (errno == EINPROGRESS) && wait_seconds )
     {
+        tv.tv_sec = wait_seconds - tv.tv_sec;
+        tv.tv_usec = 0;
+
+        fd_set rfdset;
+        fd_set wfdset;
+
+        FD_ZERO(&rfdset);
+        FD_ZERO(&wfdset);
+
+        FD_SET(fd,&rfdset);
+        FD_SET(fd,&wfdset);
+        do{
+            res = select(fd+1,&rfdset,&wfdset,NULL,&tv);
+            save_errno = errno;
+        }while(res < 0 && save_errno == EINTR);
+
         if(FD_ISSET(fd,&wfdset) && ! FD_ISSET(fd,&rfdset))
-            return 0;
-        else if(FD_ISSET(fd,&rfdset) && FD_ISSET(fd,&wfdset))
-        {
-            if(!getsockopt(fd,SOL_SOCKET,SO_ERROR,&error,sizeof(int)))
-            {
-                saved_errno = error;
-            }
-        }
+                return 0;
     }
+
     return -1;
 }
 void sysutil_dns_resolve(struct sysutil_sockaddr** p_sockptr,
@@ -1170,7 +1178,6 @@ int sysutil_inet_aton(
     return inet_aton(p_text,&p_addr->u.u_sockaddr_in.sin_addr);
 }
 
-
 struct sysutil_user* sysutil_getpwuid(const int uid)
 {
     return (struct sysutil_user*)getpwuid(uid);
@@ -1218,6 +1225,8 @@ unsigned char sysutil_get_random_byte(void)
 unsigned int sysutil_get_umask(void)
 {
     unsigned int mask = umask(0);
+    if(mask < 0)
+        die("mask");
     umask(mask);
     return mask;
 }
@@ -1257,7 +1266,10 @@ char* sysutil_getenv(const char* p_var)
 
 void sysutil_set_exit_func(exitfunc_t exitfunc)
 {
-    atexit(exitfunc);
+    int retval;
+    retval = atexit(exitfunc);
+    if(retval < 0)
+        die("atexit");
 }
 int sysutil_getuid(void)
 {
@@ -1286,19 +1298,31 @@ int sysutil_running_as_root(void)
 }
 void sysutil_setuid(const struct sysutil_user* p_user)
 {
-    setuid(p_user->pw_uid);
+    int retval;
+    retval = setuid(p_user->pw_uid);
+    if(retval < 0)
+        die("setuid");
 }
 void sysutil_setgid(const struct sysutil_user* p_user)
 {
-    setgid(p_user->pw_gid);
+    int retval;
+    retval = setgid(p_user->pw_gid);;
+    if(retval < 0)
+        die("setegid");
 }
 void sysutil_setuid_numeric(int uid)
 {
-    setuid(uid);
+    int retval;
+    retval = setuid(uid);
+    if(retval < 0)
+        die("setuid");
 }
 void sysutil_setgid_numeric(int gid)
 {
-    setgid(gid);
+    int retval;
+    retval = setgid(gid);;
+    if(retval < 0)
+        die("setgid");
 }
 int sysutil_geteuid(void)
 {
@@ -1310,19 +1334,32 @@ int sysutil_getegid(void)
 }
 void sysutil_seteuid(const struct sysutil_user* p_user)
 {
-    seteuid(p_user->pw_uid);
+    int retval;
+    retval = seteuid(p_user->pw_uid);;
+    if(retval < 0)
+        die("seteuid");
+
 }
 void sysutil_setegid(const struct sysutil_user* p_user)
 {
-    setegid(p_user->pw_gid);
+    int retval;
+    retval = setegid(p_user->pw_gid);;
+    if(retval < 0)
+        die("setegid");
 }
 void sysutil_seteuid_numeric(int uid)
 {
-    seteuid(uid);
+    int retval;
+    retval = seteuid(uid);
+    if(retval < 0)
+        die("seteuid");
 }
 void sysutil_setegid_numeric(int gid)
 {
-    setegid(gid);
+    int retval;
+    retval = setegid(gid);;
+    if(retval < 0)
+        die("setegid");
 }
 void sysutil_clear_supp_groups(void)
 {
@@ -1336,7 +1373,10 @@ void sysutil_initgroups(const struct sysutil_user* p_user)
 
 void sysutil_chroot(const char* p_root_path)
 {
-    chroot(p_root_path);
+    int retval;
+    retval = chroot(p_root_path);
+    if(retval < 0)
+        die("chroot");
 }
 
 /* Time handling */
@@ -1440,19 +1480,12 @@ void sysutil_clear_fd()
 
 const char *sysutil_uname()
 {
-    const char *p_src = NULL;
-    struct mystr str = INIT_MYSTR;
     struct utsname sys_name;
     if(uname(&sys_name) < 0)
     {
         die("uname");
     }
-    str_append_char(&str,' ');
-    str_append_text(&str,sys_name.sysname);
-    str_append_text(&str," Type: L8\n");
-    p_src = str_strdup(&str);
-    str_free(&str);
-    return p_src;
+    return sys_name.sysname;
 }
 
 

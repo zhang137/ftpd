@@ -18,7 +18,7 @@ void twoprogress(struct ftpd_session *session)
     int retval;
     set_private_unix_socket(session);
 
-    write_cmd_respond(FTPD_CMDWRIO,FTP_GREET," Welcome to zyy's ftpd\n");
+    write_cmd_respond(FTPD_CMDWRIO,FTP_GREET,"Welcome to zyy's ftpd\n");
     retval = sysutil_fork();
 
     if(retval)
@@ -28,7 +28,6 @@ void twoprogress(struct ftpd_session *session)
         close_child_context(session);
         while(1)
         {
-            sysutil_syslog("parent wait",LOG_INFO | LOG_USER);
             deal_private_req(session);
         }
     }
@@ -52,14 +51,12 @@ void close_parent_context(struct ftpd_session *session)
 {
     sysutil_close(session->parent_fd);
     session->parent_fd = -1;
-    sysutil_activate_noblock(session->child_fd);
 }
 
 void close_child_context(struct ftpd_session *session)
 {
     sysutil_close(session->child_fd);
     session->child_fd = -1;
-    sysutil_activate_noblock(session->parent_fd);
 }
 
 void del_privilege()
@@ -76,31 +73,35 @@ void del_privilege()
         str_free(&nobody);
         die("getpwname");
     }
-
 //    res = setgroups(0,NULL);
 //    if(res < 0)
 //    {
 //        die("setgroups");
 //    }
 
+    //sysutil_syslog(passwd->pw_dir,LOG_INFO | LOG_USER);
+    sysutil_chroot(".");
+
     saved_gid = sysutil_getuid();
     saved_uid = sysutil_getpid();
 
-    sysutil_seteuid_numeric(passwd->pw_uid);
     sysutil_setegid_numeric(passwd->pw_gid);
+    sysutil_seteuid_numeric(passwd->pw_uid);
 
-    sysutil_chdir(passwd->pw_dir);
+    //sysutil_syslog("seteuid",LOG_INFO | LOG_USER);
+    //sysutil_seteuid_numeric(passwd->pw_uid);
+    //sysutil_setegid_numeric(passwd->pw_gid);
 
-    sysutil_chroot(".");
+
 }
 
 void deal_private_req(struct ftpd_session *session)
 {
     struct mystr str_buf = INIT_MYSTR;
+    private_str_alloc_memchunk(&str_buf,NULL,FTPD_UNIXSOCK_LEN);
 
     while(1)
     {
-        private_str_alloc_memchunk(&str_buf,NULL,FTPD_UNIXSOCK_LEN);
         get_request_data(session->parent_fd,&str_buf);
 
         if(parse_cmd(session,&str_buf))
@@ -109,8 +110,9 @@ void deal_private_req(struct ftpd_session *session)
         if(sysutil_wait_reap_one())
             sysutil_exit(0);
     }
+    str_free(&str_buf);
 
-    ready_to_login(session);
+    user_common_deal(session);
 }
 
 int parse_cmd(struct ftpd_session *session, struct mystr *p_str)
@@ -127,9 +129,23 @@ int parse_cmd(struct ftpd_session *session, struct mystr *p_str)
     case PUNIXSOCKLOGIN:
         retval = prepare_login(p_str,session);
         break;
+    case PUNIXSOCKPORT:
+        retval = prepare_port_pattern(p_str,session);
+        break;
+    case PUNIXSOCKPASV:
+        retval = prepare_pasv_pattern(p_str,session);
+        break;
     case PUNIXSOCKPWD:
         break;
+    case PUNIXSOCKMKD:
+        break;
+    case PUNIXSOCKLIST:
+        break;
+    case PUNIXSOCKCDUP:
+        break;
     }
+
+    str_empty(p_str);
 
     return retval;
 }

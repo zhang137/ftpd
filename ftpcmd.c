@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <limits.h>
 #include <syslog.h>
 #include "ftpcmd.h"
 #include "ftpcode.h"
@@ -26,7 +27,7 @@ void handle_user(struct ftpd_session *session, struct mystr *str_arg)
     {
         str_free(&session->passwd_str);
     }
-    write_cmd_respond(FTPD_CMDWRIO,FTP_GIVEPWORD," Please specify user password.\n");
+    write_cmd_respond(FTPD_CMDWRIO,FTP_GIVEPWORD,"Please specify user password.\n");
 }
 
 void handle_pass(struct ftpd_session *session, struct mystr *str_arg)
@@ -34,7 +35,7 @@ void handle_pass(struct ftpd_session *session, struct mystr *str_arg)
     int retval;
     if(str_isempty(&session->user_str))
     {
-        write_cmd_respond(FTPD_CMDWRIO,FTP_NEEDUSER," Please first login with USER.\n");
+        write_cmd_respond(FTPD_CMDWRIO,FTP_NEEDUSER,"Please first login with USER.\n");
         return;
     }
 
@@ -43,24 +44,19 @@ void handle_pass(struct ftpd_session *session, struct mystr *str_arg)
         str_empty(str_arg);
     }
 
-    set_request_data(session->child_fd,str_arg,&session->user_str);
+    struct mystr str_buf = INIT_MYSTR;
 
-    retval = get_cmd_responds(session->child_fd);
-    switch(retval)
-    {
-    case PUNIXSOCKLOGINFAIL:
-        write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINERR," Login incorrect.\n");
-        session->login_fails = 1;
-        break;
-    case PUNIXSOCKLOGINOK:
-        write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINOK," Login successful.\n");
-        session->login_fails = 0;
-        break;
-    };
+    str_append_char(&str_buf,PUNIXSOCKLOGIN);
+    str_append_char(&str_buf,' ');
+    str_append_str(&str_buf,&session->user_str);
+    str_append_char(&str_buf,' ');
+    str_append_str(&str_buf,str_arg);
+
+    set_request_data(session->child_fd,&str_buf);
     str_free(str_arg);
 
-    sysutil_close(session->child_fd);
-    session->child_fd = -1;
+    deal_parent_respond(session);
+    close_child_context(session);
 
 }
 
@@ -74,8 +70,15 @@ void handle_cdup()
 
 }
 
-void handle_pwd()
+void handle_cwd()
 {
+    char *p_cwd = NULL;
+    p_cwd = sysutil_getcwd(p_cwd,0);
+
+    sysutil_syslog(p_cwd,LOG_INFO | LOG_USER);
+    write_cmd_respond(FTPD_CMDWRIO,FTP_CWDOK,p_cwd);
+    sysutil_free(p_cwd);
+    sysutil_syslog("cwd ok",LOG_INFO | LOG_USER);
 
 }
 
@@ -89,12 +92,17 @@ void handle_help()
 
 }
 
-void handle_list()
+void handle_list(struct ftpd_session *session)
 {
+    char *p_cwd = NULL;
+    p_cwd = sysutil_getcwd(p_cwd,0);
+
+    util_ls(p_cwd);
+    sysutil_free(p_cwd);
 
 }
 
-void handle_mkd()
+void handle_mkd(struct ftpd_session *session, struct mystr *str_arg)
 {
 
 }
@@ -109,13 +117,22 @@ void handle_noop()
 
 }
 
-void handle_port()
+void handle_port(struct ftpd_session *session, struct mystr *str_arg)
 {
+    struct mystr str_buf = INIT_MYSTR;
+
+    str_append_char(&str_buf,PUNIXSOCKPORT);
+    str_append_char(&str_buf,' ');
+    str_append_str(&str_buf,str_arg);
+
+    set_request_data(session->child_fd,&str_buf);
+    str_free(str_arg);
+    deal_parent_respond(session);
 }
 
 void handle_quit()
 {
-    write_cmd_respond(FTPD_CMDWRIO,FTP_GOODBYE," GoodBye.\n");
+    write_cmd_respond(FTPD_CMDWRIO,FTP_GOODBYE,"GoodBye.\n");
     sysutil_exit(0);
 }
 
@@ -158,13 +175,28 @@ void handle_syst(struct ftpd_session *session)
     if(!session->login_fails)
     {
         const char *p_src = NULL;
+        struct mystr str_respond = INIT_MYSTR;
         p_src = sysutil_uname();
-        write_cmd_respond(FTPD_CMDWRIO,FTP_SYSTOK,p_src);
 
-        sysutil_free(p_src);
+#ifdef __linux__
+        str_alloc_text(&str_respond,"UNIX Type: L");
+#endif  //UNIX
+#ifdef __unix__
+        str_alloc_text(&str_respond,"UNIX Type: L");
+#endif  //UNIX
+#ifdef _WIN32
+        str_alloc_text(&str_respond,"WINDOWS Type: L");
+#endif // _WIN32
+        char char_bit = CHAR_BIT+'0';
+        str_append_char(&str_respond,char_bit);
+        str_append_char(&str_respond,'\n');
+
+        write_cmd_respond(FTPD_CMDWRIO,FTP_SYSTOK,str_respond.pbuf);
+
+        str_free(&str_respond);
         sysutil_exit(0);
     }
-    write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINERR,"  Please login with USER and PASS.\n");
+    write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINERR,"Please login with USER and PASS.\n");
 }
 
 

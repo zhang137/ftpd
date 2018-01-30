@@ -13,21 +13,21 @@ void handle_pasv(struct ftpd_session *session, struct mystr *str_arg);
 */
 void handle_user(struct ftpd_session *session, struct mystr *str_arg);
 /*
-* 服务器中止上一次FTP服务命令及所有相关的数据传输。
+*向远程系统发送用户的密码，该命令在USER命令后使用。
 */
 void handle_pass(struct ftpd_session *session, struct mystr *str_arg);
 /*
-*为数据连接指定一个IP地址和本地端口。
+* 服务器中止上一次FTP服务命令及所有相关的数据传输。
 */
 void handle_abot();
 /*
-*当前目录改为远程文件系统的根目录，无需改变登录、帐号信息或传输参数
+*
 */
 void handle_cdup();
 /*
 *应答中返回当前工作目录的名称
 */
-void handle_pwd();
+void handle_cwd();
 /*
 *删除服务器站点上在路径名中指定的文件。
 */
@@ -43,7 +43,7 @@ void handle_list();
 /*
 *创建一个在路径名中指定的目录（如果是绝对路径名）或当前工作目录的子目录（如果是相对路径名）。
 */
-void handle_mkd();
+void handle_mkd(struct ftpd_session *session, struct mystr *str_arg);
 /*
 *说明：指定传输模式。
 *用法：STRU<Mode><CRLF>
@@ -58,9 +58,9 @@ void handle_mode();
 */
 void handle_noop();
 /*
-*向远程系统发送用户的密码，该命令在USER命令后使用。
+*为数据连接指定一个IP地址和本地端口。
 */
-void handle_port();
+void handle_port(struct ftpd_session *session, struct mystr *str_arg);
 /*
 *终止连接
 */

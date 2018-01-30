@@ -149,7 +149,7 @@ void str_append_str(struct mystr* p_str, const struct mystr* p_other)
     int left_len = p_str->alloc_bytes - num_len;
     if(left_len < append_len)
     {
-        str_rpad(p_str,append_len-left_len);
+        str_rpad(p_str,append_len-left_len+1);
     }
 
     sysutil_memcpy(p_str->pbuf+num_len,p_other->pbuf,append_len);
@@ -163,7 +163,7 @@ void str_append_text(struct mystr* p_str, const char* p_src)
     int left_len = p_str->alloc_bytes - num_len;
     if(left_len < append_len)
     {
-        str_rpad(p_str,append_len-left_len);
+        str_rpad(p_str,append_len-left_len+1);
     }
 
     sysutil_memcpy(p_str->pbuf+num_len,p_src,append_len);
@@ -266,9 +266,8 @@ void str_replace_char(struct mystr* p_str, char from, char to)
     for(i = 0; i < p_str->num_len; i++)
     {
         if(p_str->pbuf[i] == from)
-            break;
+            p_str->pbuf[i] = to;
     }
-    p_str->pbuf[i] = to;
 }
 
 void str_replace_text(struct mystr* p_str, const char* p_from,
@@ -292,9 +291,10 @@ void str_split_char(struct mystr* p_src, struct mystr* p_rhs, char c)
     {
         p_rhs->pbuf = sysutil_malloc(surplus_size+1);
         sysutil_memclr(p_rhs->pbuf,surplus_size+1);
-        sysutil_memcpy(p_rhs->pbuf,p_src->pbuf+ipos+1,surplus_size);
-        p_rhs->num_len = surplus_size;
         p_rhs->alloc_bytes = surplus_size+1;
+        p_rhs->num_len = surplus_size;
+
+        sysutil_memcpy(p_rhs->pbuf,p_src->pbuf+ipos+1,surplus_size);
     }
     sysutil_memclr(p_src->pbuf+ipos,surplus_size+1);
     p_src->num_len = ipos;
@@ -313,8 +313,11 @@ void str_split_char_reverse(struct mystr* p_src, struct mystr* p_rhs, char c)
     surplus_size = str_len - ipos - 1;
     if(surplus_size > 0)
     {
-        p_rhs->pbuf = sysutil_malloc(surplus_size);
-        p_rhs->num_len = p_rhs->alloc_bytes = surplus_size;
+        p_rhs->pbuf = sysutil_malloc(surplus_size+1);
+        sysutil_memclr(p_rhs->pbuf,surplus_size+1);
+        p_rhs->alloc_bytes = surplus_size+1;
+        p_rhs->num_len = surplus_size;
+
         sysutil_memcpy(p_rhs->pbuf,p_src->pbuf+ipos+1,surplus_size);
     }
     sysutil_memclr(p_src->pbuf+ipos,str_len-ipos);

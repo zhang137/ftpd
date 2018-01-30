@@ -60,11 +60,17 @@ int message_recv_peek(int fd,struct mystr *p_str,unsigned int datalen)
 
 void write_cmd_respond(int fd, unsigned resp_code,const char *resp_str)
 {
-    char ptr_code[4];
     struct mystr str_respond = INIT_MYSTR;
-    snprintf(ptr_code,4,"%d",resp_code);
-    str_append_text(&str_respond,ptr_code);
+    if(resp_code > 0)
+    {
+        char ptr_code[4];
+        snprintf(ptr_code,4,"%d",resp_code);
+        str_append_text(&str_respond,ptr_code);
+        str_append_char(&str_respond,' ');
+    }
+
     str_append_text(&str_respond,resp_str);
+
     write_cmd_data(fd,&str_respond,str_respond.num_len);
     str_free(&str_respond);
 }
@@ -91,21 +97,12 @@ void get_request_data(int fd, struct mystr* str_buf)
 
 }
 
-void set_request_data(int fd, struct mystr* str_pass,struct mystr* str_user)
+void set_request_data(int fd, struct mystr* str_buf)
 {
-    struct mystr str_buf = INIT_MYSTR;
 
-    str_append_char(&str_buf,PUNIXSOCKLOGIN);
-    str_append_char(&str_buf,' ');
-    str_append_str(&str_buf,str_user);
-    str_append_char(&str_buf,' ');
-    str_append_str(&str_buf,str_pass);
-    str_append_char(&str_buf,'\0');
-
-    sysutil_syslog(str_buf.pbuf,LOG_INFO | LOG_USER);
-    write_cmd_data(fd,&str_buf,str_buf.num_len);
-
-    str_free(&str_buf);
+    sysutil_syslog(str_buf->pbuf,LOG_INFO | LOG_USER);
+    write_cmd_data(fd,str_buf,str_buf->num_len);
+    str_free(str_buf);
 }
 
 void set_respond_data(int fd, enum PUNIXLOGINSTATUS status)
@@ -128,6 +125,30 @@ int get_cmd_responds(int fd)
     sysutil_free(buf);
 
     return retval;
+}
+
+void deal_parent_respond(struct ftpd_session *session)
+{
+    int retval;
+    retval = get_cmd_responds(session->child_fd);
+
+    switch(retval)
+    {
+    case PUNIXSOCKLOGINFAIL:
+        write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINERR,"Login incorrect.\n");
+        session->login_fails = 1;
+        break;
+    case PUNIXSOCKLOGINOK:
+        write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINOK,"Login successful.\n");
+        session->login_fails = 0;
+        break;
+    case PUNIXSOCKPORTOK:
+        write_cmd_respond(FTPD_CMDWRIO,FTP_PORTOK,"PORT command successful. Consider using PASV.\n");
+        break;
+    case PUNIXSOCKPORTFAIL:
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADPROT,"PORT connection failed.\n");
+        break;
+    };
 }
 
 

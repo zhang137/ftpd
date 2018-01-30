@@ -23,7 +23,9 @@ int main()
 
 
     standalone_socket(&session);
+
     sysutil_openlog(LOG_DAEMON);
+
     twoprogress(&session);
 
     //util_ls("/home/usr/");

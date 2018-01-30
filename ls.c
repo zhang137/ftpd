@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include "sysutil.h"
+#include "dataprocess.h"
 
 #define MAX(x,y) ((x) < (y) ? (y) : (x))
 
@@ -51,6 +52,8 @@ void util_ls(const char *ptrPath)
         perror("opendir");
         exit(-1);
     }
+    char *p_buf = (char *)sysutil_malloc(1024);
+    sysutil_memclr(p_buf,1024);
 
     while(ptr_dname = sysutil_next_dirent(p_Dir))
     {
@@ -114,8 +117,10 @@ void util_ls(const char *ptrPath)
 
             char *ptr_time = ctime(&statbuf->st_mtim);
             ptr_time[strlen(ptr_time) - 1] = '\0';
-            fprintf(stdout,"%s %*d %s  %s  %*d  %s  %s\n",entries_permission,linknum_align,statbuf->st_nlink,
+            fprintf(p_buf,"%s %*d %s  %s  %*d  %s  %s\n",entries_permission,linknum_align,statbuf->st_nlink,
                     p_pwd->pw_name,p_grp->gr_name,filesize_align,statbuf->st_size ,ptr_time,ptr_dname);
+
+            write_cmd_respond(FTPD_CMDWRIO,-1,p_buf);
         }
 
     }
