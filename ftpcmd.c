@@ -77,6 +77,7 @@ void handle_cwd()
 
     sysutil_syslog(p_cwd,LOG_INFO | LOG_USER);
     write_cmd_respond(FTPD_CMDWRIO,FTP_CWDOK,p_cwd);
+
     sysutil_free(p_cwd);
     sysutil_syslog("cwd ok",LOG_INFO | LOG_USER);
 
@@ -94,12 +95,12 @@ void handle_help()
 
 void handle_list(struct ftpd_session *session)
 {
-    char *p_cwd = NULL;
-    p_cwd = sysutil_getcwd(p_cwd,0);
 
-    util_ls(p_cwd);
-    sysutil_free(p_cwd);
+    write_cmd_respond(FTPD_CMDWRIO,FTP_DATACONN,"Here comes the directory listing.\n");
 
+    util_ls(session->data_fd,session->home_str.pbuf);
+
+    write_cmd_respond(FTPD_CMDWRIO,FTP_TRANSFEROK,"Directory send OK.\n");
 }
 
 void handle_mkd(struct ftpd_session *session, struct mystr *str_arg)

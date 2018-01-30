@@ -200,7 +200,7 @@ void wait_data_connection(struct ftpd_session *session)
             handle_quit();
         }
         else {
-            write_cmd_respond(FTPD_CMDWRIO,FTP_BADCMD,"Invalid command.\n");
+            write_cmd_respond(FTPD_CMDWRIO,FTP_COMMANDNOTIMPL,"Invalid command.\n");
             str_free(&str_arg);
 
         }
@@ -214,6 +214,7 @@ int prepare_port_pattern(struct mystr *str_arg,struct ftpd_session *session)
 {
     int port,sockfd;
     struct sysutil_sockaddr *remote = NULL;
+    struct sysutil_sockaddr *local = NULL;
 
     {
         struct mystr str_buf = INIT_MYSTR;
@@ -236,6 +237,11 @@ int prepare_port_pattern(struct mystr *str_arg,struct ftpd_session *session)
         port = sysutil_atoi(port_real.pbuf) * 256 + sysutil_atoi(port_imaginary.pbuf);
         str_free(&port_real);
         str_free(&port_imaginary);
+
+        sysutil_sockaddr_alloc_ipv4(&local);
+        sysutil_sockaddr_get_raw_addr(session->p_local_addr.u.u_sockaddr_in);
+        sysutil_sockaddr_set_ipv4addr(local,"127.0.0.1")
+        sysutil_sockaddr_set_port(remote,port);
 
     }
 
