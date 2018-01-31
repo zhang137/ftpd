@@ -205,7 +205,7 @@ void str_append_char(struct mystr* p_str, char the_char)
 
     if(left_len <= char_size)
     {
-        str_rpad(p_str,1);
+        str_rpad(p_str,2);
     }
 
     sysutil_memcpy(p_str->pbuf+num_len,&the_char,char_size);

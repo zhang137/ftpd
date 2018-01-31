@@ -14,5 +14,7 @@ void get_request_data(int fd, struct mystr* str_buf);
 void set_login_data(int fd, struct mystr* str_pass,struct mystr* str_user);
 int get_cmd_responds(int fd);
 void set_respond_data(int fd, enum PUNIXLOGINSTATUS status);
+void recv_portmod_socket(struct ftpd_session *session);
+void deal_parent_respond(struct ftpd_session *session);
 
 #endif // DATAPROCESS_H_INCLUDED

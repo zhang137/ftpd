@@ -148,7 +148,27 @@ void deal_parent_respond(struct ftpd_session *session)
     case PUNIXSOCKPORTFAIL:
         write_cmd_respond(FTPD_CMDWRIO,FTP_BADPROT,"PORT connection failed.\n");
         break;
+    case PUNIXSOCKLISTOK:
+         write_cmd_respond(FTPD_CMDWRIO,FTP_TRANSFEROK,"Directory send OK.\n");
+        break;
     };
+}
+
+void recv_portmod_socket(struct ftpd_session *session)
+{
+    int recvfd = 0;
+    struct sysutil_sockaddr *port_addr;
+
+    sysutil_recvfd(session->child_fd,&recvfd);
+
+    sysutil_syslog("recvfd",LOG_INFO | LOG_USER);
+    session->data_fd = recvfd;
+
+    //sysutil_sockaddr_alloc_ipv4(&port_addr);
+    //sysutil_getsockname(recvfd,&port_addr);
+    //session->p_port_sockaddr = port_addr;
+
+     sysutil_syslog("get sockaddr",LOG_INFO | LOG_USER);
 }
 
 

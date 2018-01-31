@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include <sys/types.h>
+#include <syslog.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include "sysutil.h"
@@ -24,52 +25,35 @@ int max_align(int align,int to_align)
 }
 
 
-void util_ls(int fd,const char *ptrPath)
+int util_ls(int fd,const char *ptrPath)
 {
     struct sysutil_dir *p_Dir;
     struct sysutil_statbuf *statbuf;
     const char *ptr_dname;
-    struct sysutil_user *p_pwd;
+    struct sysutil_user   *p_pwd;
     struct sysutil_group  *p_grp;
-    char *entries_permission;
 
-    int entry_size,j = 0;
     double total_size = 0;
-    int linknum_align = 0,filesize_align = 0;
+    int j = 0,linknum_align = 0,filesize_align = 0;
+    char *entries_permission = (char *)sysutil_malloc(sizeof(char) * 11);
+    char *p_buf = sysutil_malloc(256);
 
-    entries_permission = (char *)sysutil_malloc(sizeof(char) * 11);
-    if(!ptrPath || access(ptrPath,F_OK))
-        return;
-
-    sysutil_chdir(ptrPath);
-
-//    sysutil_stat(ptrPath,&statbuf);
-//    total_size += statbuf->st_size;
+    if(access(ptrPath,F_OK))
+        die("access");
 
     p_Dir = sysutil_opendir(ptrPath);
     if(!p_Dir)
     {
-        perror("opendir");
-        exit(-1);
+        die("opendir");
     }
-    char *p_buf = (char *)sysutil_malloc(1024);
-    sysutil_memclr(p_buf,1024);
 
-//    while(ptr_dname = sysutil_next_dirent(p_Dir))
-//    {
-//        sysutil_stat(ptr_dname,&statbuf);
-//        total_size += statbuf->st_size;
-//        filesize_align = max_align(filesize_align,statbuf->st_size);
-//        linknum_align = max_align(linknum_align,statbuf->st_nlink);
-//    }
-//
-//    sysutil_rewinddir(p_Dir);
-//    if(total_size > 1024)
-//        sprintf(p_buf,"total  %uk\n",(uint32_t)(total_size/1024));
-//    else
-//        sprintf(p_buf,"total  %llu\n",total_size);
-//
-//    write_cmd_respond(FTPD_CMDWRIO,0,p_buf);
+    while(ptr_dname = sysutil_next_dirent(p_Dir))
+    {
+        sysutil_stat(ptr_dname,&statbuf);
+        filesize_align = max_align(filesize_align,statbuf->st_size);
+        linknum_align = max_align(linknum_align,statbuf->st_nlink);
+    }
+    sysutil_rewinddir(p_Dir);
 
     while(ptr_dname = sysutil_next_dirent(p_Dir))
     {
@@ -120,16 +104,16 @@ void util_ls(int fd,const char *ptrPath)
             char *ptr_time = ctime(&statbuf->st_mtim);
             ptr_time[strlen(ptr_time) - 1] = '\0';
 
-            sysutil_memclr(p_buf,1024);
+            sysutil_memclr(p_buf,256);
             sprintf(p_buf,"%s %*d %s  %s  %*d  %s  %s\n",entries_permission,linknum_align,statbuf->st_nlink,
                     p_pwd->pw_name,p_grp->gr_name,filesize_align,statbuf->st_size ,ptr_time,ptr_dname);
-
-            write_cmd_respond(fd,0,p_buf);
+             write_cmd_respond(fd,0,p_buf);
         }
-
     }
 
     sysutil_free(p_buf);
     sysutil_closedir(p_Dir);
     free(entries_permission);
+
+    return 1;
 }

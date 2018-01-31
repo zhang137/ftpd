@@ -31,6 +31,7 @@
 
 void die(const char *exit_str)
 {
+    sysutil_syslog(exit_str,LOG_ERR| LOG_USER);
     sysutil_exit(EXIT_FAILURE);
 }
 
@@ -192,7 +193,6 @@ int sysutil_rename(const char* p_from, const char* p_to)
 
 struct sysutil_dir* sysutil_opendir(const char* p_dirname)
 {
-
     return (struct sysutil_dir*)opendir(p_dirname);
 }
 
@@ -862,8 +862,7 @@ unsigned int sysutil_get_ipaddr_size(void)
 }
 void* sysutil_sockaddr_get_raw_addr(struct sysutil_sockaddr* p_sockaddr)
 {
-
-    return 0;
+    return sysutil_inet_ntop(p_sockaddr);
 }
 const void* sysutil_sockaddr_ipv6_v4(const struct sysutil_sockaddr* p_sockaddr)
 {
@@ -929,23 +928,17 @@ int sysutil_listen(int fd, const unsigned int backlog)
 {
     if(listen(fd,backlog) < 0)
     {
-        sysutil_syslog("listen",LOG_ERR| LOG_USER);
-         return -1;
+        die("listen");
+        return -1;
     }
     return 0;
 }
 void sysutil_getsockname(int fd, struct sysutil_sockaddr** p_sockptr)
 {
-    struct sysutil_sockaddr *ptr = *p_sockptr;
-    socklen_t sock_len = sizeof(struct sockaddr_in);
-    if(ptr->u.u_sockaddr_in.sin_family == AF_INET)
-    {
-        getsockname(fd,(struct sockaddr*)&ptr->u.u_sockaddr_in,&sock_len);
-    }
-    else if(ptr->u.u_sockaddr_in6.sin6_family == AF_INET6)
-    {
-        getsockname(fd,(struct sockaddr*)&ptr->u.u_sockaddr_in6,&sock_len);
-    }
+    socklen_t sock_len = sizeof(**p_sockptr);
+    if(getsockname(fd,&(*p_sockptr)->u.u_sockaddr, &sock_len) < 0)
+        die("getsockname");
+
 }
 void sysutil_getpeername(int fd, struct sysutil_sockaddr** p_sockptr)
 {
@@ -1169,9 +1162,18 @@ const char* sysutil_inet_ntop( const struct sysutil_sockaddr* p_sockptr)
 }
 const char* sysutil_inet_ntoa(const void* p_raw_addr)
 {
-    struct sockaddr_in *sock = (struct sockaddr_in *)p_raw_addr;
-    return inet_ntoa(sock->sin_addr);
+    struct hostent *host = NULL;
+
+    sysutil_syslog("get host",LOG_USER | LOG_INFO);
+    host = gethostbyname((char*)p_raw_addr);
+    if(!host)
+    {
+        die("gethostbyname");
+    }
+    sysutil_syslog("Ok",LOG_USER | LOG_INFO);
+    return inet_ntoa(*(struct in_addr *)(host->h_addr_list[0]));
 }
+
 int sysutil_inet_aton(
   const char* p_text, struct sysutil_sockaddr* p_addr)
 {
@@ -1434,7 +1436,7 @@ void sysutil_set_no_fds()
     res = setrlimit(RLIMIT_NOFILE,&limit);
     if(res < 0)
     {
-        //die("setrlimit");
+        die("setrlimit");
     }
 }
 
@@ -1448,7 +1450,7 @@ void sysutil_set_no_procs()
     res = setrlimit(RLIMIT_NPROC,&limit);
     if(res < 0)
     {
-        //die("setrlimit");
+        die("setrlimit");
     }
 }
 
@@ -1488,6 +1490,69 @@ const char *sysutil_uname()
     return sys_name.sysname;
 }
 
+void sysutil_sendfd(int fd,int sendfd)
+{
+    struct msghdr msg;
+    struct cmsghdr *cmsg = NULL;
+    struct iovec iov;
+
+    int *p_fd = NULL;
+    char buf[CMSG_SPACE(sizeof(sendfd))];
+
+    msg.msg_control = buf;
+    msg.msg_controllen = sizeof(buf);
+    msg.msg_iov = &iov;
+    msg.msg_iovlen = 1;
+    msg.msg_name = NULL;
+    msg.msg_namelen = 0;
+    msg.msg_flags = 0;
+
+    cmsg = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_level = SOL_SOCKET;
+    cmsg->cmsg_type = SCM_RIGHTS;
+    cmsg->cmsg_len = CMSG_LEN(sizeof(sendfd));
+
+    p_fd = (int *)CMSG_DATA(cmsg);
+    *p_fd = sendfd;
+
+    if(sendmsg(fd,&msg,0) < 0)
+    {
+        die("recvmsg");
+    }
+}
+
+void sysutil_recvfd(int fd,int *recvfd)
+{
+    char char_recv;
+    struct msghdr msg;
+    struct cmsghdr *cmsg = NULL;
+    struct iovec iov;
+    iov.iov_base = &char_recv;
+    iov.iov_len = sizeof(char_recv);
+
+    char buf[CMSG_SPACE(sizeof(fd))];
+    struct sysutil_sockaddr sockaddr;
+    msg.msg_control = buf;
+    msg.msg_controllen = sizeof(buf);
+
+    msg.msg_iov = &iov;
+    msg.msg_iovlen = 1;
+    msg.msg_name = NULL;
+    msg.msg_namelen = 0;
+    msg.msg_flags = 0;
+
+    if(recvmsg(fd,&msg,0) < 0)
+    {
+        die("recvmsg");
+    }
+    for(cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL; CMSG_NXTHDR(&msg,cmsg))
+    {
+        if(cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_RIGHTS)
+        {
+            *recvfd = *(int *)CMSG_DATA(cmsg);
+        }
+    }
+}
 
 
 

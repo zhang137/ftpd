@@ -375,5 +375,7 @@ void sysutil_set_no_procs();
 void sysutil_set_sockopt(int fd);
 const char * sysutil_uname();
 
+void sysutil_sendfd(int fd, int sendfd);
+void sysutil_recvfd(int fd, int *recvfd);
 
 #endif // SYSUTIL_H_INCLUDED

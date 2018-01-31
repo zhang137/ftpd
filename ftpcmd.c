@@ -56,7 +56,8 @@ void handle_pass(struct ftpd_session *session, struct mystr *str_arg)
     str_free(str_arg);
 
     deal_parent_respond(session);
-    close_child_context(session);
+    if(!session->login_fails)
+        close_child_context(session);
 
 }
 
@@ -65,21 +66,18 @@ void handle_abot()
 
 }
 
-void handle_cdup()
+void handle_cdup(struct ftpd_session *session)
 {
 
 }
 
-void handle_cwd()
+void handle_cwd(struct ftpd_session *session)
 {
-    char *p_cwd = NULL;
-    p_cwd = sysutil_getcwd(p_cwd,0);
+    struct mystr str_buf = INIT_MYSTR;
 
-    sysutil_syslog(p_cwd,LOG_INFO | LOG_USER);
-    write_cmd_respond(FTPD_CMDWRIO,FTP_CWDOK,p_cwd);
-
-    sysutil_free(p_cwd);
-    sysutil_syslog("cwd ok",LOG_INFO | LOG_USER);
+    str_append_char(&str_buf,PUNIXSOCKPWD);
+    set_request_data(session->child_fd,&str_buf);
+    str_free(&str_buf);
 
 }
 
@@ -95,12 +93,16 @@ void handle_help()
 
 void handle_list(struct ftpd_session *session)
 {
-
     write_cmd_respond(FTPD_CMDWRIO,FTP_DATACONN,"Here comes the directory listing.\n");
 
-    util_ls(session->data_fd,session->home_str.pbuf);
+    struct mystr str_buf = INIT_MYSTR;
+    str_append_char(&str_buf,PUNIXSOCKLIST);
+    set_request_data(session->child_fd,&str_buf);
+    str_free(&str_buf);
 
-    write_cmd_respond(FTPD_CMDWRIO,FTP_TRANSFEROK,"Directory send OK.\n");
+    deal_parent_respond(session);
+    //util_ls(session->data_fd,session->home_str.pbuf);
+
 }
 
 void handle_mkd(struct ftpd_session *session, struct mystr *str_arg)
@@ -128,7 +130,11 @@ void handle_port(struct ftpd_session *session, struct mystr *str_arg)
 
     set_request_data(session->child_fd,&str_buf);
     str_free(str_arg);
+
     deal_parent_respond(session);
+    //recv_portmod_socket(session);
+
+
 }
 
 void handle_quit()

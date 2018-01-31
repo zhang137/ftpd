@@ -23,11 +23,11 @@ void handle_abot();
 /*
 *
 */
-void handle_cdup();
+void handle_cdup(struct ftpd_session *session);
 /*
 *应答中返回当前工作目录的名称
 */
-void handle_cwd();
+void handle_cwd(struct ftpd_session *session);
 /*
 *删除服务器站点上在路径名中指定的文件。
 */

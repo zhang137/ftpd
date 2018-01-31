@@ -31,6 +31,7 @@ void standalone_socket(struct ftpd_session *session)
 
     listen_fd = sysutil_get_ipv4_sock();
     sysutil_activate_reuseaddr(listen_fd);
+
     sysutil_sockaddr_alloc_ipv4(&listen_addr);
     sysutil_sockaddr_set_any(listen_addr);
     sysutil_sockaddr_set_port(listen_addr,FTPD_CMDPORT);
@@ -81,7 +82,6 @@ void util_client_dup2(int fd)
     }
 }
 
-
 void init_session()
 {
 
@@ -91,6 +91,11 @@ void load_default_config()
 {
 
 }
+
+
+
+
+
 
 
 

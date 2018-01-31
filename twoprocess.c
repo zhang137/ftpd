@@ -81,6 +81,8 @@ void del_privilege()
 
     //sysutil_syslog(passwd->pw_dir,LOG_INFO | LOG_USER);
     sysutil_chroot(".");
+    sysutil_set_no_procs();
+    sysutil_set_no_fds();
 
     saved_gid = sysutil_getuid();
     saved_uid = sysutil_getpid();
@@ -140,6 +142,7 @@ int parse_cmd(struct ftpd_session *session, struct mystr *p_str)
     case PUNIXSOCKMKD:
         break;
     case PUNIXSOCKLIST:
+        retval = prepare_list(&session->home_str, session);
         break;
     case PUNIXSOCKCDUP:
         break;

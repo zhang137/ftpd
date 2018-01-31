@@ -212,9 +212,8 @@ void wait_data_connection(struct ftpd_session *session)
 
 int prepare_port_pattern(struct mystr *str_arg,struct ftpd_session *session)
 {
-    int port,sockfd;
+    int port;
     struct sysutil_sockaddr *remote = NULL;
-    struct sysutil_sockaddr *local = NULL;
 
     {
         struct mystr str_buf = INIT_MYSTR;
@@ -224,61 +223,82 @@ int prepare_port_pattern(struct mystr *str_arg,struct ftpd_session *session)
         str_split_char(str_arg,&str_buf,' ');
 
         str_replace_char(&str_buf,',','.');
-        sysutil_syslog(str_buf.pbuf,LOG_USER | LOG_INFO);
 
 
         str_split_char_reverse(&str_buf,&port_imaginary,'.');
         str_split_char_reverse(&str_buf,&port_real,'.');
         str_free(&str_buf);
 
-        sysutil_syslog(port_real.pbuf,LOG_USER | LOG_INFO);
-        sysutil_syslog(port_imaginary.pbuf,LOG_USER | LOG_INFO);
-
         port = sysutil_atoi(port_real.pbuf) * 256 + sysutil_atoi(port_imaginary.pbuf);
         str_free(&port_real);
         str_free(&port_imaginary);
 
-        sysutil_sockaddr_alloc_ipv4(&local);
-        sysutil_sockaddr_get_raw_addr(session->p_local_addr.u.u_sockaddr_in);
-        sysutil_sockaddr_set_ipv4addr(local,"127.0.0.1")
-        sysutil_sockaddr_set_port(remote,port);
-
     }
 
-    sockfd = sysutil_get_ipv4_sock();
     sysutil_sockaddr_alloc_ipv4(&remote);
     sysutil_sockaddr_set_any(remote);
     sysutil_sockaddr_set_port(remote,port);
 
-    if(sysutil_connect_timeout(sockfd,&remote->u.u_sockaddr,0) < 0)
+    if(sysutil_connect_timeout(session->data_fd,&remote->u.u_sockaddr,40) < 0)
     {
-        sysutil_close(sockfd);
         sysutil_free(remote);
         set_respond_data(session->parent_fd,PUNIXSOCKPORTFAIL);
         return 0;
     }
-    session->data_fd = sockfd;
+
     session->p_port_sockaddr = remote;
+
     set_respond_data(session->parent_fd,PUNIXSOCKPORTOK);
+    //sysutil_sendfd(session->parent_fd,sockfd);
 
     return 1;
 }
 
 int prepare_pasv_pattern(struct mystr *str_arg,struct ftpd_session *session)
 {
+    char *p_cwd = NULL;
+    p_cwd = sysutil_getcwd(p_cwd,0);
 
+    sysutil_syslog(p_cwd,LOG_INFO | LOG_USER);
+    write_cmd_respond(FTPD_CMDWRIO,FTP_CWDOK,p_cwd);
+
+    sysutil_free(p_cwd);
+}
+
+int prepare_list(struct mystr *str_arg,struct ftpd_session *session)
+{
+    int retval = 0;
+    retval = util_ls(session->data_fd,str_arg->pbuf);
+    if(retval)
+        set_respond_data(session->parent_fd,PUNIXSOCKLISTOK);
+    sysutil_shutdown_failok(session->data_fd);
+
+    return retval;
 }
 
 void login_user(struct ftpd_session *session)
 {
-
     struct sysutil_user *pw = sysutil_getpwnam(session->user_str.pbuf);
     if(!pw)
     {
         die("getpwname");
     }
     sysutil_chdir(pw->pw_dir);
-    sysutil_chroot(".");
+    //sysutil_chroot(".");
+
+    int sockfd;
+    struct sysutil_sockaddr *local = NULL;
+    sockfd = sysutil_get_ipv4_sock();
+    sysutil_activate_noblock(sockfd);
+
+    sysutil_sockaddr_alloc_ipv4(&local);
+    sysutil_sockaddr_set_any(local);
+    sysutil_sockaddr_set_port(local,FTPD_DATAPORT);
+
+    sysutil_bind(sockfd,local);
+    session->data_fd = sockfd;
+
+    sysutil_free(local);
 
     sysutil_setegid_numeric(pw->pw_gid);
     sysutil_seteuid_numeric(pw->pw_uid);
