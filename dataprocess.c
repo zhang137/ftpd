@@ -149,7 +149,7 @@ void deal_parent_respond(struct ftpd_session *session)
         write_cmd_respond(FTPD_CMDWRIO,FTP_BADPROT,"PORT connection failed.\n");
         break;
     case PUNIXSOCKLISTOK:
-         write_cmd_respond(FTPD_CMDWRIO,FTP_TRANSFEROK,"Directory send OK.\n");
+        write_cmd_respond(FTPD_CMDWRIO,FTP_TRANSFEROK,"Directory send OK.\n");
         break;
     };
 }

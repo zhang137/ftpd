@@ -29,14 +29,14 @@ int util_ls(int fd,const char *ptrPath)
 {
     struct sysutil_dir *p_Dir;
     struct sysutil_statbuf *statbuf;
-    const char *ptr_dname;
     struct sysutil_user   *p_pwd;
     struct sysutil_group  *p_grp;
 
+    const char *ptr_dname;
     double total_size = 0;
     int j = 0,linknum_align = 0,filesize_align = 0;
     char *entries_permission = (char *)sysutil_malloc(sizeof(char) * 11);
-    char *p_buf = sysutil_malloc(256);
+    char *p_buf = (char *)sysutil_malloc(256);
 
     if(access(ptrPath,F_OK))
         die("access");
@@ -110,10 +110,11 @@ int util_ls(int fd,const char *ptrPath)
              write_cmd_respond(fd,0,p_buf);
         }
     }
-
+    sysutil_syslog("ls",LOG_INFO | LOG_USER);
     sysutil_free(p_buf);
     sysutil_closedir(p_Dir);
-    free(entries_permission);
+    sysutil_free(entries_permission);
 
+    sysutil_syslog("ls...",LOG_INFO | LOG_USER);
     return 1;
 }

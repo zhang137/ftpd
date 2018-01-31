@@ -32,6 +32,7 @@
 void die(const char *exit_str)
 {
     sysutil_syslog(exit_str,LOG_ERR| LOG_USER);
+
     sysutil_exit(EXIT_FAILURE);
 }
 
@@ -199,7 +200,7 @@ struct sysutil_dir* sysutil_opendir(const char* p_dirname)
 void sysutil_closedir(struct sysutil_dir* p_dir)
 {
     int ret = closedir(p_dir);
-    if(ret < 0);
+    if(ret < 0)
         die("closedir");
 }
 
