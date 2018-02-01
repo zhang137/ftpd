@@ -46,7 +46,7 @@ void handle_pass(struct ftpd_session *session, struct mystr *str_arg)
 
     struct mystr str_buf = INIT_MYSTR;
 
-    str_append_char(&str_buf,PUNIXSOCKLOGIN);
+    str_append_char(&str_buf,PCMDREQUESTLOGIN);
     str_append_char(&str_buf,' ');
     str_append_str(&str_buf,&session->user_str);
     str_append_char(&str_buf,' ');
@@ -75,7 +75,7 @@ void handle_cwd(struct ftpd_session *session)
 {
     struct mystr str_buf = INIT_MYSTR;
 
-    str_append_char(&str_buf,PUNIXSOCKPWD);
+    str_append_char(&str_buf,PCMDREQUESTPWD);
     set_request_data(session->child_fd,&str_buf);
     str_free(&str_buf);
 
@@ -96,12 +96,11 @@ void handle_list(struct ftpd_session *session)
     write_cmd_respond(FTPD_CMDWRIO,FTP_DATACONN,"Here comes the directory listing.\n");
 
     struct mystr str_buf = INIT_MYSTR;
-    str_append_char(&str_buf,PUNIXSOCKLIST);
+    str_append_char(&str_buf,PCMDREQUESTLIST);
     set_request_data(session->child_fd,&str_buf);
     str_free(&str_buf);
 
     deal_parent_respond(session);
-    //util_ls(session->data_fd,session->home_str.pbuf);
 
 }
 
@@ -124,7 +123,7 @@ void handle_port(struct ftpd_session *session, struct mystr *str_arg)
 {
     struct mystr str_buf = INIT_MYSTR;
 
-    str_append_char(&str_buf,PUNIXSOCKPORT);
+    str_append_char(&str_buf,PCMDREQUESTPORT);
     str_append_char(&str_buf,' ');
     str_append_str(&str_buf,str_arg);
 
@@ -132,9 +131,6 @@ void handle_port(struct ftpd_session *session, struct mystr *str_arg)
     str_free(str_arg);
 
     deal_parent_respond(session);
-    //recv_portmod_socket(session);
-
-
 }
 
 void handle_quit()

@@ -377,5 +377,7 @@ const char * sysutil_uname();
 
 void sysutil_sendfd(int fd, int sendfd);
 void sysutil_recvfd(int fd, int *recvfd);
+void sysutil_prctl(int option);
+void sysutil_capnetbind();
 
 #endif // SYSUTIL_H_INCLUDED

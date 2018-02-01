@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <syslog.h>
+#include <sys/prctl.h>
 #include <shadow.h>
 #include "sysutil.h"
 #include "prelogin.h"
@@ -72,56 +73,6 @@ struct mystr get_rpc_request(struct mystr *str_arg)
 
     return str_cmd;
 
-}
-
-int prepare_login(struct mystr *str_arg,struct ftpd_session *session)
-{
-
-    sysutil_syslog("prepare login",LOG_INFO | LOG_USER);
-    int ulong_size = sizeof(unsigned long);
-    struct mystr str_user = INIT_MYSTR;
-    struct mystr str_pass = INIT_MYSTR;
-
-    str_split_char(str_arg,&str_user,' ');
-    str_split_char(&str_user,&str_pass,' ');
-
-    if(!str_equal_text(&str_user,"anonymous"))
-    {
-        struct spwd *passwd = getspnam(str_user.pbuf);
-        if(!passwd)
-        {
-            sysutil_syslog("getpwnam error",LOG_INFO | LOG_USER);
-            str_free(&str_user);
-            str_free(&str_pass);
-            set_respond_data(session->parent_fd,PUNIXSOCKLOGINFAIL);
-            return 0;
-        }
-
-        if(str_all_space(&str_pass) || str_getlen(&str_pass) > 128 || str_contains_unprintable(&str_pass)
-               || sysutil_strcmp(passwd->sp_pwdp, (char*)crypt(str_pass.pbuf, passwd->sp_pwdp)))
-        {
-            str_free(&str_user);
-            str_free(&str_pass);
-
-            set_respond_data(session->parent_fd,PUNIXSOCKLOGINFAIL);
-            return 0;
-        }
-    }
-    else
-    {
-        str_free(&str_user);
-        str_alloc_text(&str_user,"ftp");
-    }
-
-
-    set_respond_data(session->parent_fd,PUNIXSOCKLOGINOK);
-
-    close_parent_context(session);
-
-    session->user_str = str_user;
-    session->passwd_str = str_pass;
-
-    return 1;
 }
 
 void user_common_deal(struct ftpd_session *session)
@@ -209,90 +160,56 @@ void wait_data_connection(struct ftpd_session *session)
     }
 }
 
-
-int prepare_port_pattern(struct mystr *str_arg,struct ftpd_session *session)
+int prepare_login(struct mystr *str_arg,struct ftpd_session *session)
 {
-    int port;
-    int sockfd;
-    struct sysutil_sockaddr *remote = NULL;
 
+    sysutil_syslog("prepare login",LOG_INFO | LOG_USER);
+    int ulong_size = sizeof(unsigned long);
+    struct mystr str_user = INIT_MYSTR;
+    struct mystr str_pass = INIT_MYSTR;
+
+    str_split_char(str_arg,&str_user,' ');
+    str_split_char(&str_user,&str_pass,' ');
+
+    if(!str_equal_text(&str_user,"anonymous"))
     {
-        struct mystr str_buf = INIT_MYSTR;
-        struct mystr port_real = INIT_MYSTR;
-        struct mystr port_imaginary = INIT_MYSTR;
+        struct spwd *passwd = getspnam(str_user.pbuf);
+        if(!passwd)
+        {
+            sysutil_syslog("getpwnam error",LOG_INFO | LOG_USER);
+            str_free(&str_user);
+            str_free(&str_pass);
+            set_respond_data(session->parent_fd,PCMDRESPONDLOGINFAIL);
+            return 0;
+        }
 
-        str_split_char(str_arg,&str_buf,' ');
+        if(str_all_space(&str_pass) || str_getlen(&str_pass) > 128 || str_contains_unprintable(&str_pass)
+               || sysutil_strcmp(passwd->sp_pwdp, (char*)crypt(str_pass.pbuf, passwd->sp_pwdp)))
+        {
+            str_free(&str_user);
+            str_free(&str_pass);
 
-        str_replace_char(&str_buf,',','.');
-
-
-        str_split_char_reverse(&str_buf,&port_imaginary,'.');
-        str_split_char_reverse(&str_buf,&port_real,'.');
-        str_free(&str_buf);
-
-        port = sysutil_atoi(port_real.pbuf) * 256 + sysutil_atoi(port_imaginary.pbuf);
-        str_free(&port_real);
-        str_free(&port_imaginary);
-
-        struct sysutil_sockaddr *local = NULL;
-
-        sockfd = sysutil_get_ipv4_sock();
-        sysutil_activate_noblock(sockfd);
-        sysutil_activate_linger(sockfd);
-        sysutil_activate_reuseaddr(sockfd);
-
-        sysutil_sockaddr_alloc_ipv4(&local);
-        sysutil_sockaddr_set_any(local);
-        sysutil_sockaddr_set_port(local,FTPD_DATAPORT);
-
-        sysutil_bind(sockfd,local);
-        session->data_fd = sockfd;
-
-        sysutil_free(local);
-
+            set_respond_data(session->parent_fd,PCMDRESPONDLOGINFAIL);
+            return 0;
+        }
+    }
+    else
+    {
+        str_free(&str_user);
+        str_alloc_text(&str_user,"ftp");
     }
 
-    sysutil_sockaddr_alloc_ipv4(&remote);
-    sysutil_sockaddr_set_any(remote);
-    sysutil_sockaddr_set_port(remote,port);
 
-    if(sysutil_connect_timeout(session->data_fd,&remote->u.u_sockaddr,40) < 0)
-    {
-        sysutil_free(remote);
-        set_respond_data(session->parent_fd,PUNIXSOCKPORTFAIL);
-        return 0;
-    }
+    set_respond_data(session->parent_fd,PCMDRESPONDLOGINOK);
 
-    session->p_port_sockaddr = remote;
+    close_parent_context(session);
 
-    set_respond_data(session->parent_fd,PUNIXSOCKPORTOK);
-    //sysutil_sendfd(session->parent_fd,sockfd);
+    session->user_str = str_user;
+    session->passwd_str = str_pass;
 
     return 1;
 }
 
-int prepare_pasv_pattern(struct mystr *str_arg,struct ftpd_session *session)
-{
-    char *p_cwd = NULL;
-    p_cwd = sysutil_getcwd(p_cwd,0);
-
-    sysutil_syslog(p_cwd,LOG_INFO | LOG_USER);
-    write_cmd_respond(FTPD_CMDWRIO,FTP_CWDOK,p_cwd);
-
-    sysutil_free(p_cwd);
-}
-
-int prepare_list(struct mystr *str_arg,struct ftpd_session *session)
-{
-    int retval = 0;
-    retval = util_ls(session->data_fd,str_arg->pbuf);
-    if(retval)
-        set_respond_data(session->parent_fd,PUNIXSOCKLISTOK);
-
-    sysutil_shutdown_failok(session->data_fd);
-
-    return retval;
-}
 
 void login_user(struct ftpd_session *session)
 {
@@ -303,13 +220,25 @@ void login_user(struct ftpd_session *session)
     }
     sysutil_chdir(pw->pw_dir);
     //sysutil_chroot(".");
+    sysutil_syslog("prctl",LOG_INFO | LOG_USER);
+    sysutil_prctl(PR_SET_KEEPCAPS);
 
-    sysutil_setegid_numeric(pw->pw_gid);
-    sysutil_seteuid_numeric(pw->pw_uid);
+    sysutil_setgid_numeric(pw->pw_gid);
+    sysutil_setuid_numeric(pw->pw_uid);
+    sysutil_syslog("cap_net_bind_service",LOG_INFO | LOG_USER);
+
+    sysutil_capnetbind();
+    sysutil_syslog("ok",LOG_INFO | LOG_USER);
 
     struct mystr str_home = INIT_MYSTR;
     str_alloc_text(&str_home,pw->pw_dir);
     session->home_str = str_home;
+
+    struct mystr_list *p_visited_list = (struct mystr_list *)sysutil_malloc(sizeof(struct mystr_list));
+    p_visited_list->pnodes = NULL;
+    p_visited_list->alloc_len = p_visited_list->list_len = 0;
+    str_list_add(p_visited_list,&str_home);
+    session->p_visited_dir_list = p_visited_list;
 
 }
 

@@ -80,6 +80,7 @@ void del_privilege()
 //    }
 
     //sysutil_syslog(passwd->pw_dir,LOG_INFO | LOG_USER);
+
     sysutil_chroot(".");
     sysutil_set_no_procs();
     sysutil_set_no_fds();
@@ -87,13 +88,12 @@ void del_privilege()
     saved_gid = sysutil_getuid();
     saved_uid = sysutil_getpid();
 
-    sysutil_setegid_numeric(passwd->pw_gid);
-    sysutil_seteuid_numeric(passwd->pw_uid);
+    sysutil_setgid_numeric(passwd->pw_gid);
+    sysutil_setuid_numeric(passwd->pw_uid);
 
     //sysutil_syslog("seteuid",LOG_INFO | LOG_USER);
     //sysutil_seteuid_numeric(passwd->pw_uid);
     //sysutil_setegid_numeric(passwd->pw_gid);
-
 
 }
 
@@ -128,23 +128,25 @@ int parse_cmd(struct ftpd_session *session, struct mystr *p_str)
     cmd = str_get_char_at(p_str,0);
     switch(cmd)
     {
-    case PUNIXSOCKLOGIN:
+    case PCMDREQUESTLOGIN:
         retval = prepare_login(p_str,session);
         break;
-    case PUNIXSOCKPORT:
+    case PCMDREQUESTPORT:
         retval = prepare_port_pattern(p_str,session);
         break;
-    case PUNIXSOCKPASV:
+    case PCMDREQUESTPASV:
         retval = prepare_pasv_pattern(p_str,session);
         break;
-    case PUNIXSOCKPWD:
+    case PCMDREQUESTPWD:
+        retval = prepare_pwd(session);
         break;
-    case PUNIXSOCKMKD:
+    case PCMDREQUESTMKD:
+        retval = prepare_mkd(p_str,session);
         break;
-    case PUNIXSOCKLIST:
-        retval = prepare_list(&session->home_str, session);
+    case PCMDREQUESTLIST:
+        retval = prepare_list(session);
         break;
-    case PUNIXSOCKCDUP:
+    case PCMDREQUESTCDUP:
         break;
     }
 

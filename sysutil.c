@@ -25,6 +25,9 @@
 #include <ctype.h>
 #include <errno.h>
 
+#include <sys/prctl.h>
+#include <sys/capability.h>
+
 #include "sysutil.h"
 #include "str.h"
 
@@ -1555,5 +1558,30 @@ void sysutil_recvfd(int fd,int *recvfd)
     }
 }
 
+void sysutil_prctl(int option)
+{
+    int retval;
+    retval = prctl(option,1);
+    if(retval < 0)
+        die("prctl");
+}
 
+
+void sysutil_capnetbind()
+{
+    cap_t caps = cap_init();
+    cap_value_t capValue = CAP_NET_BIND_SERVICE;
+    unsigned num_caps = 1;
+    if(!CAP_IS_SUPPORTED(CAP_NET_BIND_SERVICE))
+        die("CAP_NET_BIND_SERVICE not supported");
+    //cap_set_flag(caps, CAP_EFFECTIVE, num_caps, &capValue, CAP_SET);
+    //cap_set_flag(caps, CAP_INHERITABLE, num_caps, &capValue, CAP_SET);
+    if(cap_set_flag(caps, CAP_PERMITTED, num_caps, &capValue, CAP_SET) < 0)
+        die("cap_set_flag");
+
+    if (cap_set_proc(caps) < 0)
+        die("cap_set_proc");
+
+    cap_free(caps);
+}
 

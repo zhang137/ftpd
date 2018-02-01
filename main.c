@@ -2,19 +2,26 @@
 #include <syslog.h>
 #include "session.h"
 #include "sysutil.h"
-//#include "util.h"
+#include "strlist.h"
 #include "twoprocess.h"
 
 
 int main()
 {
+//    struct mystr_list list = INIT_STRLIST;
+//    struct mystr str;
+//    str_alloc_text(&str,"13213");
+//
+//    str_list_add(&list,&str);
+//
+//    printf("%s",str_list_get_pstr(&list,0).pbuf);
+
     struct ftpd_session session = {
-        NULL, NULL, NULL, 0, 0, 0, 0, 0,
-        NULL, 0, 0, 0, 0, 0, 0, INIT_MYSTR,
-        INIT_MYSTR, 0, NULL, 0, INIT_MYSTR,
-        INIT_MYSTR, INIT_MYSTR, 0, 0, 0, 0,
-        INIT_MYSTR, INIT_MYSTR, 0, 0, 0, 0,
-        INIT_MYSTR, 0
+        NULL, NULL, NULL, 0, 0, 0, NULL,
+        0, 0, 0, 0, 0,0, INIT_MYSTR, INIT_MYSTR,
+        0, INIT_MYSTR,0,INIT_STRLIST, INIT_MYSTR,
+        INIT_MYSTR, INIT_MYSTR, 0, 0,INIT_MYSTR, INIT_MYSTR,
+        0, 0, 0, 0,INIT_MYSTR, 0
     };
 
     session.idle_timeout = 20;
@@ -27,9 +34,6 @@ int main()
     sysutil_openlog(LOG_DAEMON);
 
     twoprogress(&session);
-
-    //util_ls("/home/usr/");
-
 
     return 0;
 }

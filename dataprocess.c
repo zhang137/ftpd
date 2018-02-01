@@ -134,21 +134,21 @@ void deal_parent_respond(struct ftpd_session *session)
 
     switch(retval)
     {
-    case PUNIXSOCKLOGINFAIL:
+    case PCMDRESPONDLOGINFAIL:
         write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINERR,"Login incorrect.\n");
         session->login_fails = 1;
         break;
-    case PUNIXSOCKLOGINOK:
+    case PCMDRESPONDLOGINOK:
         write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINOK,"Login successful.\n");
         session->login_fails = 0;
         break;
-    case PUNIXSOCKPORTOK:
+    case PCMDRESPONDPORTOK:
         write_cmd_respond(FTPD_CMDWRIO,FTP_PORTOK,"PORT command successful. Consider using PASV.\n");
         break;
-    case PUNIXSOCKPORTFAIL:
+    case PCMDRESPONDPORTFAIL:
         write_cmd_respond(FTPD_CMDWRIO,FTP_BADPROT,"PORT connection failed.\n");
         break;
-    case PUNIXSOCKLISTOK:
+    case PCMDRESPONDLISTOK:
         write_cmd_respond(FTPD_CMDWRIO,FTP_TRANSFEROK,"Directory send OK.\n");
         break;
     };
@@ -171,8 +171,133 @@ void recv_portmod_socket(struct ftpd_session *session)
      sysutil_syslog("get sockaddr",LOG_INFO | LOG_USER);
 }
 
+int prepare_port_pattern(struct mystr *str_arg,struct ftpd_session *session)
+{
+    int port;
+    struct sysutil_sockaddr *remote = NULL;
+
+    {
+        struct mystr str_buf = INIT_MYSTR;
+        struct mystr port_real = INIT_MYSTR;
+        struct mystr port_imaginary = INIT_MYSTR;
+
+        str_split_char(str_arg,&str_buf,' ');
+
+        str_replace_char(&str_buf,',','.');
+
+        str_split_char_reverse(&str_buf,&port_imaginary,'.');
+        str_split_char_reverse(&str_buf,&port_real,'.');
+        str_free(&str_buf);
+
+        port = sysutil_atoi(port_real.pbuf) * 256 + sysutil_atoi(port_imaginary.pbuf);
+        str_free(&port_real);
+        str_free(&port_imaginary);
+
+        int sockfd;
+        struct sysutil_sockaddr *local = NULL;
+        sockfd = sysutil_get_ipv4_sock();
+        sysutil_activate_noblock(sockfd);
+
+        sysutil_sockaddr_alloc_ipv4(&local);
+        sysutil_sockaddr_set_any(local);
+        sysutil_sockaddr_set_port(local,FTPD_DATAPORT);
+
+        sysutil_bind(sockfd,local);
+
+        session->data_fd = sockfd;
+        sysutil_free(local);
+
+    }
+
+    sysutil_sockaddr_alloc_ipv4(&remote);
+    sysutil_sockaddr_set_any(remote);
+    sysutil_sockaddr_set_port(remote,port);
+
+    if(sysutil_connect_timeout(session->data_fd,&remote->u.u_sockaddr,40) < 0)
+    {
+        sysutil_free(remote);
+        set_respond_data(session->parent_fd,PCMDRESPONDPORTFAIL);
+        return 0;
+    }
+
+    session->p_port_sockaddr = remote;
+
+    set_respond_data(session->parent_fd,PCMDRESPONDPORTOK);
+    //sysutil_sendfd(session->parent_fd,sockfd);
+
+    return 1;
+}
+
+int prepare_pasv_pattern(struct mystr *str_arg,struct ftpd_session *session)
+{
+
+}
+
+int prepare_pwd(struct ftpd_session *session)
+{
+    struct mystr str_buf = INIT_MYSTR;
+    char *p_cwd = NULL;
+    p_cwd = sysutil_getcwd(p_cwd,0);
+
+    str_append_char(&str_buf,'\"');
+    str_append_text(&str_buf,p_cwd);
+    str_append_char(&str_buf,'\"');
+    str_append_text(&str_buf," is the current directory\n");
+
+    write_cmd_respond(FTPD_CMDWRIO,FTP_CWDOK,str_buf.pbuf);
+
+    str_free(&str_buf);
+
+    return 1;
+}
 
 
+int prepare_list(struct ftpd_session *session)
+{
+    sysutil_syslog("list.......",LOG_INFO | LOG_USER);
+    int retval = 0;
+
+    {
+        struct mystr *str_pwd = NULL;
+        struct mystr_list *p_visited_dir_list = session->p_visited_dir_list;
+
+        str_pwd = str_list_get_pstr(p_visited_dir_list,
+                       str_list_get_length(p_visited_dir_list)-1);
+
+        retval = util_ls(session->data_fd,str_pwd->pbuf);
+    }
+
+    if(retval)
+        set_respond_data(session->parent_fd,PCMDRESPONDLISTOK);
+    sysutil_shutdown_failok(session->data_fd);
+
+    return retval;
+}
+
+int prepare_cdup(struct ftpd_session *session)
+{
+
+}
+
+int prepare_mkd(struct mystr *str_arg,struct ftpd_session *session)
+{
+
+}
+
+
+int prepare_retr(struct mystr *str_arg,struct ftpd_session *session)
+{
+
+}
+
+int prepare_stor(struct mystr *str_arg,struct ftpd_session *session)
+{
+
+}
+int prepare_rest(struct mystr *str_arg,struct ftpd_session *session)
+{
+
+}
 
 
 

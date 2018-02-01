@@ -66,8 +66,9 @@ int str_list_contains_str(const struct mystr_list* p_list,
 const struct mystr* str_list_get_pstr(const struct mystr_list* p_list,
                                       unsigned int index)
 {
-    if(index < 0 || index >= p_list->list_len)
-        return NULL;
     struct mystr_list *pTemp = p_list;
-    return pTemp->pnodes + index;
+    if(index < 0 || index >= pTemp->list_len)
+        return NULL;
+
+    return &(pTemp->pnodes[index]);
 }
