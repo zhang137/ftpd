@@ -177,25 +177,26 @@
 1517404218 source:/home/zyy/ftpd/ftpd/commoncode.c
 	"commoncode.h"
 
-1517404218 /home/zyy/ftpd/ftpd/commoncode.h
+1517485428 /home/zyy/ftpd/ftpd/commoncode.h
 
 1517404218 source:/home/zyy/ftpd/ftpd/controlprocess.c
 	"controlprocess.h"
 
 1517404218 /home/zyy/ftpd/ftpd/controlprocess.h
 
-1517407575 source:/home/zyy/ftpd/ftpd/dataprocess.c
+1517494930 source:/home/zyy/ftpd/ftpd/dataprocess.c
 	<stdio.h>
 	<stdlib.h>
 	<unistd.h>
 	<errno.h>
 	<syslog.h>
+	<time.h>
 	"sysutil.h"
 	"dataprocess.h"
 	"commoncode.h"
 	"ftpcode.h"
 
-1517404218 /home/zyy/ftpd/ftpd/sysutil.h
+1517485428 /home/zyy/ftpd/ftpd/sysutil.h
 	<netinet/in.h>
 	<sys/stat.h>
 	<dirent.h>
@@ -205,7 +206,7 @@
 
 1517404218 /home/zyy/ftpd/ftpd/filesize.h
 
-1517404218 /home/zyy/ftpd/ftpd/dataprocess.h
+1517494286 /home/zyy/ftpd/ftpd/dataprocess.h
 	"commoncode.h"
 	"session.h"
 	"str.h"
@@ -224,7 +225,7 @@
 
 1517404218 /home/zyy/ftpd/ftpd/ftpcode.h
 
-1517407580 source:/home/zyy/ftpd/ftpd/ftpcmd.c
+1517494320 source:/home/zyy/ftpd/ftpd/ftpcmd.c
 	<stdio.h>
 	<stdlib.h>
 	<unistd.h>
@@ -235,7 +236,7 @@
 	"commoncode.h"
 	"dataprocess.h"
 
-1517404218 /home/zyy/ftpd/ftpd/ftpcmd.h
+1517489701 /home/zyy/ftpd/ftpd/ftpcmd.h
 	"session.h"
 	"str.h"
 
@@ -244,7 +245,7 @@
 
 1517404218 /home/zyy/ftpd/ftpd/hash.h
 
-1517406807 source:/home/zyy/ftpd/ftpd/ls.c
+1517489150 source:/home/zyy/ftpd/ftpd/ls.c
 	<stdio.h>
 	<stdlib.h>
 	<string.h>
@@ -256,21 +257,23 @@
 	"sysutil.h"
 	"dataprocess.h"
 
-1517404218 source:/home/zyy/ftpd/ftpd/main.c
+1517485428 source:/home/zyy/ftpd/ftpd/main.c
 	<stdio.h>
 	<syslog.h>
 	"session.h"
 	"sysutil.h"
+	"strlist.h"
 	"twoprocess.h"
 
 1517404218 /home/zyy/ftpd/ftpd/twoprocess.h
 	"session.h"
 
-1517409062 source:/home/zyy/ftpd/ftpd/prelogin.c
+1517489714 source:/home/zyy/ftpd/ftpd/prelogin.c
 	<stdio.h>
 	<stdlib.h>
 	<unistd.h>
 	<syslog.h>
+	<sys/prctl.h>
 	<shadow.h>
 	"sysutil.h"
 	"prelogin.h"
@@ -278,7 +281,7 @@
 	"commoncode.h"
 	"ftpcmd.h"
 
-1517404218 /home/zyy/ftpd/ftpd/prelogin.h
+1517485428 /home/zyy/ftpd/ftpd/prelogin.h
 	"str.h"
 	"session.h"
 
@@ -288,11 +291,11 @@
 	"sysutil.h"
 	<syslog.h>
 
-1517404218 source:/home/zyy/ftpd/ftpd/strlist.c
+1517485428 source:/home/zyy/ftpd/ftpd/strlist.c
 	<stdlib.h>
 	"strlist.h"
 
-1517406994 source:/home/zyy/ftpd/ftpd/sysutil.c
+1517488669 source:/home/zyy/ftpd/ftpd/sysutil.c
 	<stdio.h>
 	<stdlib.h>
 	<sys/types.h>
@@ -319,10 +322,12 @@
 	<time.h>
 	<ctype.h>
 	<errno.h>
+	<sys/prctl.h>
+	<sys/capability.h>
 	"sysutil.h"
 	"str.h"
 
-1517404218 source:/home/zyy/ftpd/ftpd/twoprocess.c
+1517494345 source:/home/zyy/ftpd/ftpd/twoprocess.c
 	<stdio.h>
 	<stdlib.h>
 	<unistd.h>

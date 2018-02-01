@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <syslog.h>
+#include <time.h>
 #include "sysutil.h"
 #include "dataprocess.h"
 #include "commoncode.h"
@@ -228,9 +229,76 @@ int prepare_port_pattern(struct mystr *str_arg,struct ftpd_session *session)
     return 1;
 }
 
-int prepare_pasv_pattern(struct mystr *str_arg,struct ftpd_session *session)
+int prepare_pasv_pattern(struct ftpd_session *session)
 {
+    int sockfd;
 
+    {
+        int port;
+        int p_real,p_imaginary;
+
+        port = 1025 +  rand() % (65536-1024);
+        p_real = port / 256;
+        p_imaginary = port % 256;
+        srand(time(NULL));
+
+        struct sysutil_sockaddr *local = NULL;
+
+        sockfd = sysutil_get_ipv4_sock();
+        sysutil_activate_noblock(sockfd);
+
+        sysutil_sockaddr_alloc_ipv4(&local);
+        sysutil_sockaddr_set_any(local);
+        sysutil_sockaddr_set_port(local,port);
+
+        sysutil_bind(sockfd,local);
+        sysutil_listen(sockfd,1);
+
+        sysutil_getsockname(sockfd,&local);
+
+        struct mystr str_buf = INIT_MYSTR;
+        struct mystr port_real = INIT_MYSTR;
+        struct mystr port_imaginary = INIT_MYSTR;
+        char port_buf[4] = {0};
+
+        str_alloc_text(&str_buf,"Entering Passive Mode (");
+        snprintf(port_buf,4,"%d",p_real);
+        str_append_text(&port_real,port_buf);
+
+        sysutil_memclr(port_buf,4);
+        snprintf(port_buf,4,"%d",p_imaginary);
+        str_append_text(&port_imaginary,port_buf);
+
+        str_append_text(&str_buf,"127.0.0.1");//sysutil_inet_ntop(local));
+        str_replace_char(&str_buf,'.',',');
+        str_append_char(&str_buf,',');
+        str_append_str(&str_buf,&port_real);
+        str_append_char(&str_buf,',');
+        str_append_str(&str_buf,&port_imaginary);
+        str_append_text(&str_buf,")\n");
+
+        write_cmd_respond(FTPD_CMDWRIO,FTP_PASVOK,str_buf.pbuf);
+
+        str_free(&str_buf);
+        str_free(&port_real);
+        str_free(&port_imaginary);
+        sysutil_free(local);
+    }
+
+    struct sysutil_sockaddr *remote = NULL;
+    socklen_t sock_len = sizeof(*remote);
+    sysutil_sockaddr_alloc_ipv4(&remote);
+
+    int client_fd;
+    client_fd = sysutil_accept_timeout(sockfd,remote,0);
+
+    session->data_fd = client_fd;
+    session->pasv_listen_fd = sockfd;
+    session->p_remote_addr = remote;
+
+    //sysutil_sendfd(session->parent_fd,sockfd);
+
+    return 1;
 }
 
 int prepare_pwd(struct ftpd_session *session)

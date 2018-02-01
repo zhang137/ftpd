@@ -7,7 +7,7 @@
 /*
 *服务器在一个非标准端口上收听数据连接。
 */
-void handle_pasv(struct ftpd_session *session, struct mystr *str_arg);
+void handle_pasv(struct ftpd_session *session);
 /*
 *远程系统上的用户名称
 */

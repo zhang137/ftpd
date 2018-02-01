@@ -1574,8 +1574,8 @@ void sysutil_capnetbind()
     unsigned num_caps = 1;
     if(!CAP_IS_SUPPORTED(CAP_NET_BIND_SERVICE))
         die("CAP_NET_BIND_SERVICE not supported");
-    //cap_set_flag(caps, CAP_EFFECTIVE, num_caps, &capValue, CAP_SET);
-    //cap_set_flag(caps, CAP_INHERITABLE, num_caps, &capValue, CAP_SET);
+    cap_set_flag(caps, CAP_EFFECTIVE, num_caps, &capValue, CAP_SET);
+    cap_set_flag(caps, CAP_INHERITABLE, num_caps, &capValue, CAP_SET);
     if(cap_set_flag(caps, CAP_PERMITTED, num_caps, &capValue, CAP_SET) < 0)
         die("cap_set_flag");
 
