@@ -456,7 +456,13 @@ int str_contains_space(const struct mystr* p_str)
 }
 int str_all_space(const struct mystr* p_str)
 {
-    return str_isempty(p_str);
+    int i;
+    for(i = 0; i < p_str->num_len; i++)
+    {
+        if(!sysutil_isspace(str_get_char_at(p_str,i)))
+            return 0;
+    }
+    return 1;
 }
 
 struct mystr str_wipeout_blank(struct mystr *p_str)

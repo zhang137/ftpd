@@ -30,6 +30,7 @@ struct ftpd_session
 
   /* Details of the FTP protocol state */
   filesize_t restart_pos;
+  int is_ascii;
   struct mystr rnfr_filename_str;
   int abor_received;
 

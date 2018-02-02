@@ -62,19 +62,30 @@ int message_recv_peek(int fd,struct mystr *p_str,unsigned int datalen)
 void write_cmd_respond(int fd, unsigned resp_code,const char *resp_str)
 {
     struct mystr str_respond = INIT_MYSTR;
-    if(resp_code > 0)
-    {
-        char ptr_code[4];
-        snprintf(ptr_code,4,"%d",resp_code);
-        str_append_text(&str_respond,ptr_code);
-        str_append_char(&str_respond,' ');
-    }
 
+    char ptr_code[4];
+    snprintf(ptr_code,4,"%d",resp_code);
+    str_append_text(&str_respond,ptr_code);
+    str_append_char(&str_respond,' ');
     str_append_text(&str_respond,resp_str);
 
     write_cmd_data(fd,&str_respond,str_respond.num_len);
+
     str_free(&str_respond);
 }
+
+void write_data_respond(int fd, int data_mode,const char *resp_str)
+{
+    struct mystr str_respond = INIT_MYSTR;
+    str_append_text(&str_respond,resp_str);
+    if(data_mode)
+    {
+        str_append_text(&str_respond,"\r\n");
+    }
+    write_cmd_data(fd,&str_respond,str_respond.num_len);
+    str_free(&str_respond);
+}
+
 
 void write_cmd_data(int fd,struct mystr *strbuf,unsigned int size)
 {
@@ -161,8 +172,6 @@ void recv_portmod_socket(struct ftpd_session *session)
     struct sysutil_sockaddr *port_addr;
 
     sysutil_recvfd(session->child_fd,&recvfd);
-
-    sysutil_syslog("recvfd",LOG_INFO | LOG_USER);
     session->data_fd = recvfd;
 
     //sysutil_sockaddr_alloc_ipv4(&port_addr);
@@ -175,6 +184,7 @@ void recv_portmod_socket(struct ftpd_session *session)
 int prepare_port_pattern(struct mystr *str_arg,struct ftpd_session *session)
 {
     int port;
+    int sockfd;
     struct sysutil_sockaddr *remote = NULL;
 
     {
@@ -183,64 +193,60 @@ int prepare_port_pattern(struct mystr *str_arg,struct ftpd_session *session)
         struct mystr port_imaginary = INIT_MYSTR;
 
         str_split_char(str_arg,&str_buf,' ');
-
         str_replace_char(&str_buf,',','.');
-
         str_split_char_reverse(&str_buf,&port_imaginary,'.');
         str_split_char_reverse(&str_buf,&port_real,'.');
-        str_free(&str_buf);
 
         port = sysutil_atoi(port_real.pbuf) * 256 + sysutil_atoi(port_imaginary.pbuf);
         str_free(&port_real);
         str_free(&port_imaginary);
 
-        int sockfd;
         struct sysutil_sockaddr *local = NULL;
+
         sockfd = sysutil_get_ipv4_sock();
-        sysutil_activate_linger(sockfd);
+        sysutil_activate_reuseaddr(sockfd);
         sysutil_activate_noblock(sockfd);
 
         sysutil_sockaddr_alloc_ipv4(&local);
         sysutil_sockaddr_set_any(local);
         sysutil_sockaddr_set_port(local,FTPD_DATAPORT);
 
-        sysutil_bind(sockfd,local);
+        if(sysutil_bind(sockfd,local))
+            die("port used");
 
-        session->data_fd = sockfd;
         sysutil_free(local);
 
+        sysutil_sockaddr_alloc_ipv4(&remote);
+        sysutil_sockaddr_set_ipv4addr(remote,str_buf.pbuf);
+        sysutil_sockaddr_set_port(remote,port);
+
+        str_free(&str_buf);
+
     }
-
-    sysutil_sockaddr_alloc_ipv4(&remote);
-    sysutil_sockaddr_set_any(remote);
-    sysutil_sockaddr_set_port(remote,port);
-
-    if(sysutil_connect_timeout(session->data_fd,&remote->u.u_sockaddr,40) < 0)
+    if(sysutil_connect_timeout(sockfd,remote,40) < 0)
     {
         sysutil_free(remote);
         set_respond_data(session->parent_fd,PCMDRESPONDPORTFAIL);
-        return 0;
+        return -1;
     }
-
+    sysutil_syslog("connect successed",LOG_INFO | LOG_USER);
+    session->data_fd = sockfd;
     session->p_port_sockaddr = remote;
 
     set_respond_data(session->parent_fd,PCMDRESPONDPORTOK);
     //sysutil_sendfd(session->parent_fd,sockfd);
 
-    return 1;
+    return 0;
 }
 
 int prepare_pasv_pattern(struct ftpd_session *session)
 {
     int sockfd;
-
-
+    int p_real,p_imaginary;
     {
         int port;
-        int p_real,p_imaginary;
-        srand(time(NULL));
 
-        sysutil_syslog("select port",LOG_INFO | LOG_USER);
+        srand(time(NULL));
 
         do {
 
@@ -249,8 +255,6 @@ int prepare_pasv_pattern(struct ftpd_session *session)
             p_imaginary = port % 256;
 
         }while(sysutil_is_port_reserved(port));
-
-        sysutil_syslog("",LOG_INFO | LOG_USER);
 
         struct sysutil_sockaddr *local = NULL;
         sockfd = sysutil_get_ipv4_sock();
@@ -262,9 +266,9 @@ int prepare_pasv_pattern(struct ftpd_session *session)
 
         sysutil_bind(sockfd,local);
         sysutil_listen(sockfd,1);
-
-        sysutil_getsockname(sockfd,&local);
-
+        sysutil_sockaddr_clear(&local);
+    }
+    {
         struct mystr str_buf = INIT_MYSTR;
         struct mystr port_real = INIT_MYSTR;
         struct mystr port_imaginary = INIT_MYSTR;
@@ -278,7 +282,11 @@ int prepare_pasv_pattern(struct ftpd_session *session)
         snprintf(port_buf,4,"%d",p_imaginary);
         str_append_text(&port_imaginary,port_buf);
 
-        str_append_text(&str_buf,"127.0.0.1");//sysutil_inet_ntop(local));
+        char *p_ip = sysutil_localnet_ipaddress();
+        str_append_text(&str_buf,p_ip);
+        sysutil_free(p_ip);
+
+
         str_replace_char(&str_buf,'.',',');
         str_append_char(&str_buf,',');
         str_append_str(&str_buf,&port_real);
@@ -291,7 +299,6 @@ int prepare_pasv_pattern(struct ftpd_session *session)
         str_free(&str_buf);
         str_free(&port_real);
         str_free(&port_imaginary);
-        sysutil_free(local);
     }
 
     struct sysutil_sockaddr *remote = NULL;
@@ -305,19 +312,15 @@ int prepare_pasv_pattern(struct ftpd_session *session)
     session->pasv_listen_fd = sockfd;
     session->p_remote_addr = remote;
 
-    //sysutil_sendfd(session->parent_fd,sockfd);
-
     return 1;
 }
 
 int prepare_pwd(struct ftpd_session *session)
 {
     struct mystr str_buf = INIT_MYSTR;
-    char *p_cwd = NULL;
-    p_cwd = sysutil_getcwd(p_cwd,0);
 
     str_append_char(&str_buf,'\"');
-    str_append_text(&str_buf,p_cwd);
+    str_append_text(&str_buf,sysutil_getcwd(NULL,0));
     str_append_char(&str_buf,'\"');
     str_append_text(&str_buf," is the current directory\n");
 
@@ -331,7 +334,6 @@ int prepare_pwd(struct ftpd_session *session)
 
 int prepare_list(struct ftpd_session *session)
 {
-    sysutil_syslog("list.......",LOG_INFO | LOG_USER);
     int retval = 0;
 
     {
@@ -357,16 +359,83 @@ int prepare_list(struct ftpd_session *session)
     return retval;
 }
 
+int prepare_type(struct mystr *str_arg, struct ftpd_session *session)
+{
+    struct mystr str_buf = INIT_MYSTR;
+    str_split_char(str_arg,&str_buf,' ');
+
+    if(str_equal_text(&str_buf,"A"))
+    {
+        session->is_ascii = 1;
+        write_cmd_respond(FTPD_CMDWRIO,FTP_TYPEOK,"apply ascii mode.\n");
+    }
+    else if(str_equal_text(&str_buf,"I"))
+    {
+        session->is_ascii = 0;
+        write_cmd_respond(FTPD_CMDWRIO,FTP_TYPEOK,"apply image mode.\n");
+    }else
+    {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Only ASCII(A) and IMAGE(I) modes are supported..\n");
+    }
+
+    str_free(&str_buf);
+    return 1;
+}
+
 int prepare_cdup(struct ftpd_session *session)
 {
 
+    sysutil_chdir(".");
+
+    struct mystr *str_pwd = NULL;
+    struct mystr str_buf = INIT_MYSTR;
+
+    str_alloc_text(&str_buf,sysutil_getcwd(NULL,0));
+    struct mystr_list *p_visited_dir_list = session->p_visited_dir_list;
+    str_pwd = str_list_get_pstr(p_visited_dir_list,
+                       str_list_get_length(p_visited_dir_list)-1);
+
+    if(!str_list_contains_str(&str_pwd,&str_buf))
+    {
+        str_list_add(p_visited_dir_list,&str_buf);
+    }
+    write_cmd_respond(FTPD_CMDWRIO,FTP_CWDOK,"Directory successfully changed.\n");
+}
+
+int prepare_cwd(struct mystr *str_arg,struct ftpd_session *session)
+{
+    struct mystr str_buf = INIT_MYSTR;
+
+    str_split_char(str_arg,&str_buf,' ');
+    if(str_isempty(&str_buf) || str_all_space(&str_buf) || str_contains_unprintable(&str_buf)
+                            || sysutil_chdir(str_buf.pbuf))
+    {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect path.\n");
+    }
+    str_free(&str_buf);
+
+    struct mystr *str_pwd = NULL;
+
+    str_alloc_text(&str_buf,sysutil_getcwd(NULL,0));
+    struct mystr_list *p_visited_dir_list = session->p_visited_dir_list;
+    str_pwd = str_list_get_pstr(p_visited_dir_list,
+                       str_list_get_length(p_visited_dir_list)-1);
+
+    if(!str_list_contains_str(&str_buf,&str_buf))
+    {
+        str_list_add(p_visited_dir_list,&str_buf);
+    }else
+    {
+        str_free(&str_buf);
+    }
+
+    write_cmd_respond(FTPD_CMDWRIO,FTP_CWDOK,"Directory successfully changed.\n");
 }
 
 int prepare_mkd(struct mystr *str_arg,struct ftpd_session *session)
 {
 
 }
-
 
 int prepare_retr(struct mystr *str_arg,struct ftpd_session *session)
 {
@@ -377,7 +446,18 @@ int prepare_stor(struct mystr *str_arg,struct ftpd_session *session)
 {
 
 }
+
 int prepare_rest(struct mystr *str_arg,struct ftpd_session *session)
+{
+
+}
+
+int prepare_rmd(struct mystr *str_arg,struct ftpd_session *session)
+{
+
+}
+
+int prepare_dele(struct mystr *str_arg,struct ftpd_session *session)
 {
 
 }

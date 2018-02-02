@@ -106,7 +106,8 @@ void deal_private_req(struct ftpd_session *session)
     {
         get_request_data(session->parent_fd,&str_buf);
 
-        if(parse_cmd(session,&str_buf))
+        parse_cmd(session,&str_buf);
+        if(!session->login_fails)
             break;
 
         if(sysutil_wait_reap_one())
@@ -132,21 +133,43 @@ int parse_cmd(struct ftpd_session *session, struct mystr *p_str)
         retval = prepare_login(p_str,session);
         break;
     case PCMDREQUESTPORT:
-        retval = prepare_port_pattern(p_str,session);
+        prepare_port_pattern(p_str,session);
         break;
     case PCMDREQUESTPASV:
-        retval = prepare_pasv_pattern(session);
+        prepare_pasv_pattern(session);
         break;
     case PCMDREQUESTPWD:
-        retval = prepare_pwd(session);
+        prepare_pwd(session);
+        break;
+    case PCMDREQUESTCWD:
+        prepare_cwd(p_str,session);
         break;
     case PCMDREQUESTMKD:
-        retval = prepare_mkd(p_str,session);
+        prepare_mkd(p_str,session);
         break;
     case PCMDREQUESTLIST:
-        retval = prepare_list(session);
+        prepare_list(session);
+        break;
+    case PCMDREQUESTTYPE:
+        prepare_type(p_str,session);
         break;
     case PCMDREQUESTCDUP:
+        prepare_cdup(session);
+        break;
+    case PCMDREQUESTREST:
+        prepare_rest(p_str,session);
+        break;
+    case PCMDREQUESTRETR:
+        prepare_retr(p_str,session);
+        break;
+    case PCMDREQUESTSTOR:
+        prepare_stor(p_str,session);
+        break;
+    case PCMDREQUESTRMD:
+        prepare_rmd(p_str,session);
+        break;
+    case PCMDREQUESTDELE:
+        prepare_dele(p_str,session);
         break;
     }
 

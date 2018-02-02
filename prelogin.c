@@ -113,8 +113,7 @@ void common_request(struct ftpd_session *session)
     {
         get_request_data(session->parent_fd,&str_buf);
 
-        if(parse_cmd(session,&str_buf))
-            break;
+        parse_cmd(session,&str_buf);
 
         if(sysutil_wait_reap_one())
             sysutil_exit(0);
@@ -136,7 +135,10 @@ void wait_data_connection(struct ftpd_session *session)
         sysutil_syslog(str_arg.pbuf,LOG_USER | LOG_INFO);
 
         if(str_equal_text(&str_cmd,"PWD")) {
-            handle_cwd(session);
+            handle_pwd(session);
+        }
+        else if(str_equal_text(&str_cmd,"CWD")) {
+            handle_cwd(session,&str_arg);
         }
         else if(str_equal_text(&str_cmd,"PORT")) {
             handle_port(session,&str_arg);
@@ -146,6 +148,18 @@ void wait_data_connection(struct ftpd_session *session)
         }
         else if(str_equal_text(&str_cmd,"LIST")) {
             handle_list(session);
+        }
+        else if(str_equal_text(&str_cmd,"CDUP")) {
+            handle_cdup(session);
+        }
+        else if(str_equal_text(&str_cmd,"TYPE")) {
+            handle_type(session,&str_arg);
+        }
+        else if(str_equal_text(&str_cmd,"REST")) {
+            handle_rest(session);
+        }
+        else if(str_equal_text(&str_cmd,"RETR")) {
+            handle_retr(session);
         }
         else if(str_equal_text(&str_cmd,"MKD")) {
             handle_mkd(session,&str_arg);
@@ -179,19 +193,20 @@ int prepare_login(struct mystr *str_arg,struct ftpd_session *session)
         struct spwd *passwd = getspnam(str_user.pbuf);
         if(!passwd)
         {
-            sysutil_syslog("getpwnam error",LOG_INFO | LOG_USER);
             str_free(&str_user);
             str_free(&str_pass);
+            session->login_fails = 1;
             set_respond_data(session->parent_fd,PCMDRESPONDLOGINFAIL);
             return 0;
         }
 
-        if(str_all_space(&str_pass) || str_getlen(&str_pass) > 128 || str_contains_unprintable(&str_pass)
-               || sysutil_strcmp(passwd->sp_pwdp, (char*)crypt(str_pass.pbuf, passwd->sp_pwdp)))
+        if(str_isempty(&str_pass) || str_all_space(&str_pass) || str_getlen(&str_pass) > 128
+                        || str_contains_unprintable(&str_pass) || sysutil_strcmp(passwd->sp_pwdp,
+                                                    (char*)crypt(str_pass.pbuf, passwd->sp_pwdp)))
         {
             str_free(&str_user);
             str_free(&str_pass);
-
+            session->login_fails = 1;
             set_respond_data(session->parent_fd,PCMDRESPONDLOGINFAIL);
             return 0;
         }
@@ -209,6 +224,7 @@ int prepare_login(struct mystr *str_arg,struct ftpd_session *session)
 
     session->user_str = str_user;
     session->passwd_str = str_pass;
+    session->login_fails = 0;
 
     return 1;
 }

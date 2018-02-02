@@ -9,6 +9,7 @@ int get_cmd_responds(int fd);
 int get_netdata(struct mystr *str_arg,char term);
 int read_cmd_data(int fd,struct mystr *strbuf,unsigned int size);
 void write_cmd_data(int fd,struct mystr *strbuf,unsigned int size);
+void write_data_respond(int fd, int data_mode,const char *resp_str);
 void write_cmd_respond(int fd, unsigned resp_code,const char *resp_str);
 int message_recv_peek(int fd,struct mystr *p_str,unsigned int datalen);
 void get_request_data(int fd, struct mystr* str_buf);
@@ -26,5 +27,7 @@ int prepare_retr(struct mystr *str_arg,struct ftpd_session *session);
 int prepare_stor(struct mystr *str_arg,struct ftpd_session *session);
 int prepare_rest(struct mystr *str_arg,struct ftpd_session *session);
 int prepare_list(struct ftpd_session *session);
+int prepare_rmd(struct mystr *str_arg,struct ftpd_session *session);
+int prepare_dele(struct mystr *str_arg,struct ftpd_session *session);
 
 #endif // DATAPROCESS_H_INCLUDED

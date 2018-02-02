@@ -36,10 +36,10 @@ void standalone_socket(struct ftpd_session *session)
     sysutil_sockaddr_set_any(listen_addr);
     sysutil_sockaddr_set_port(listen_addr,FTPD_CMDPORT);
 
-    if(sysutil_bind(listen_fd,listen_addr)  < 0)
-        die("bind");
+    if(sysutil_bind(listen_fd,listen_addr))
+        die("Port used");
 
-    if(sysutil_listen(listen_fd,SOMAXCONN)  < 0)
+    if(sysutil_listen(listen_fd,SOMAXCONN))
         die("listen");
 
     sysutil_sockaddr_alloc_ipv4(&client_addr);

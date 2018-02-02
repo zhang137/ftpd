@@ -27,10 +27,12 @@ void handle_cdup(struct ftpd_session *session);
 /*
 *应答中返回当前工作目录的名称
 */
-void handle_cwd(struct ftpd_session *session);
+void handle_cwd(struct ftpd_session *session, struct mystr *str_arg);
 /*
 *删除服务器站点上在路径名中指定的文件。
 */
+void handle_pwd(struct ftpd_session *session);
+
 void handle_dele();
 /*
 *服务器通过到客户的控制连接发送有关其实现状态的帮助信息。

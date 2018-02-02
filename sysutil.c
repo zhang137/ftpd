@@ -9,6 +9,7 @@
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
 #include <netinet/ip6.h>
+#include <ifaddrs.h>
 #include <sys/utsname.h>
 #include <sys/wait.h>
 #include <sys/time.h>
@@ -34,7 +35,7 @@
 
 void die(const char *exit_str)
 {
-    sysutil_syslog(exit_str,LOG_ERR| LOG_USER);
+    sysutil_syslog(exit_str,LOG_INFO | LOG_USER);
 
     sysutil_exit(EXIT_FAILURE);
 }
@@ -180,11 +181,7 @@ int sysutil_rmdir(const char* p_dirname)
 }
 int sysutil_chdir(const char* p_dirname)
 {
-    int retval;
-    retval = chdir(p_dirname);
-    if(retval < 0)
-        die("chdir");
-    return retval;
+    return chdir(p_dirname);
 }
 int sysutil_rename(const char* p_from, const char* p_to)
 {
@@ -939,7 +936,6 @@ int sysutil_bind(int fd, const struct sysutil_sockaddr* p_sockptr)
             else {
                 die("bind");
             }
-            sysutil_syslog("bind",LOG_ERR | LOG_USER);
         }
     }
     else if(p_sockptr->u.u_sockaddr_in6.sin6_family == AF_INET6)
@@ -952,19 +948,18 @@ int sysutil_bind(int fd, const struct sysutil_sockaddr* p_sockptr)
             else {
                 die("bind");
             }
-            sysutil_syslog("bind",LOG_ERR | LOG_USER);
         }
     }
     return retval;
 }
 int sysutil_listen(int fd, const unsigned int backlog)
 {
+    int retval = 0;
     if(listen(fd,backlog) < 0)
     {
-        die("listen");
-        return -1;
+        retval =  -1;
     }
-    return 0;
+    return retval;
 }
 void sysutil_getsockname(int fd, struct sysutil_sockaddr** p_sockptr)
 {
@@ -1053,7 +1048,6 @@ int sysutil_connect_timeout(int fd,
 {
     int res,save_errno;
     struct timeval tv;
-    gettimeofday(&tv,NULL);
     res = connect(fd,&p_sockaddr->u.u_sockaddr,sizeof(*p_sockaddr));
     if(res == 0) {
         return 0;
@@ -1061,7 +1055,9 @@ int sysutil_connect_timeout(int fd,
 
     if( (errno == EINPROGRESS) && wait_seconds )
     {
-        tv.tv_sec = wait_seconds - tv.tv_sec;
+        sysutil_syslog("inprocessed ",LOG_INFO | LOG_USER);
+
+        tv.tv_sec = wait_seconds;
         tv.tv_usec = 0;
 
         fd_set rfdset;
@@ -1086,38 +1082,62 @@ int sysutil_connect_timeout(int fd,
 void sysutil_dns_resolve(struct sysutil_sockaddr** p_sockptr,
                              const char* p_name)
 {
+    int i;
+    char *ip = NULL;
+    struct hostent *hent = gethostent();
+    hent = gethostbyname(p_name);
 
+    for(i = 0; hent->h_addr_list[i]; i++)
+    {
+        if(hent->h_addrtype = AF_INET)
+        {
+            ip = sysutil_inet_ntoa(hent->h_addr_list[i]);
+            sysutil_sockaddr_alloc_ipv4(p_sockptr);
+            sysutil_sockaddr_set_ipv4addr(*p_sockptr,ip);
+        }
+        else if(hent->h_addrtype = AF_INET6)
+        {
+            ip = sysutil_inet_ntoa(hent->h_addr_list[i]);
+            sysutil_sockaddr_alloc_ipv6(p_sockptr);
+            sysutil_sockaddr_set_ipv6addr(*p_sockptr,ip);
+        }
+        break;
+    }
 }
 /* Option setting on sockets */
 void sysutil_activate_keepalive(int fd)
 {
     int klive;
     if(setsockopt(fd,SOL_SOCKET,SO_KEEPALIVE,&klive,sizeof(int)) < 0)
-        ;//die("setsockopt KEEPALIVE");
-
+    {
+        die("KEEPALIVE");
+    }
 }
 void sysutil_set_iptos_throughput(int fd)
 {
     unsigned char tos  = IPTOS_THROUGHPUT;
     if(setsockopt(fd,SOL_IP,IP_TOS,&tos,sizeof(unsigned char)) < 0)
-        ;//die("setsockopt IPTOS");
+    {
+         die("IPTOS");
+    }
 }
 void sysutil_activate_reuseaddr(int fd)
 {
     int raddr;
     if(setsockopt(fd,SOL_SOCKET,SO_REUSEADDR,&raddr,sizeof(int)) < 0)
     {
-        sysutil_close(fd);//die("setsockopt REUSEADDR");
-        sysutil_exit(EXIT_FAILURE);
+        die("reuseaddr");
     }
 
 }
 void sysutil_set_nodelay(int fd)
 {
-    int nodely;
-    if(setsockopt(fd,SOL_TCP,TCP_NODELAY,&nodely,sizeof(int)) < 0)
+    int nodelay;
+    if(setsockopt(fd,SOL_TCP,TCP_NODELAY,&nodelay,sizeof(int)) < 0)
+    {
+        die("nodelay");
+    }
 
-        ;//die("setsockopt");
 }
 void sysutil_activate_sigurg(int fd)
 {
@@ -1125,9 +1145,11 @@ void sysutil_activate_sigurg(int fd)
 }
 void sysutil_activate_oobinline(int fd)
 {
-    int klive;
-    if(setsockopt(fd,SOL_SOCKET,SO_OOBINLINE,&klive,sizeof(int)) < 0)
-        ;//die("setsockopt");
+    int obbline;
+    if(setsockopt(fd,SOL_SOCKET,SO_OOBINLINE,&obbline,sizeof(int)) < 0)
+    {
+        die("obbline");
+    }
 }
 void sysutil_activate_linger(int fd)
 {
@@ -1135,7 +1157,9 @@ void sysutil_activate_linger(int fd)
     st_linger.l_onoff = 1;
     st_linger.l_linger = 0;
     if(setsockopt(fd,SOL_SOCKET,SO_LINGER,&st_linger,sizeof(st_linger)) < 0)
-        ;//die("setsockopt");
+    {
+        die("set linger");
+    }
 }
 void sysutil_deactivate_linger_failok(int fd)
 {
@@ -1143,7 +1167,9 @@ void sysutil_deactivate_linger_failok(int fd)
     st_linger.l_onoff = 0;
     st_linger.l_linger = 0;
     if(setsockopt(fd,SOL_SOCKET,SO_LINGER,&st_linger,sizeof(st_linger)) < 0)
-        ;//die("setsockopt");
+    {
+        die("del linger");
+    }
 }
 void sysutil_activate_noblock(int fd)
 {
@@ -1151,7 +1177,7 @@ void sysutil_activate_noblock(int fd)
     if((flags = fcntl(fd,F_GETFD,0)) < 0 ||
             fcntl(fd , F_SETFD, flags | O_NONBLOCK) < 0)
     {
-        ;//die("fcntl noblock");
+        die("fcntl noblock");
     }
 
 }
@@ -1161,7 +1187,7 @@ void sysutil_deactivate_noblock(int fd)
     if((flags = fcntl(fd,F_GETFD,0)) < 0 ||
             fcntl(fd , F_SETFD, flags | ~O_NONBLOCK) < 0)
     {
-        ;//die("fcntl noblock");
+        die("fcntl block");
     }
 }
 /* This does SHUT_RDWR */
@@ -1195,16 +1221,7 @@ const char* sysutil_inet_ntop( const struct sysutil_sockaddr* p_sockptr)
 }
 const char* sysutil_inet_ntoa(const void* p_raw_addr)
 {
-    struct hostent *host = NULL;
-
-    sysutil_syslog("get host",LOG_USER | LOG_INFO);
-    host = gethostbyname((char*)p_raw_addr);
-    if(!host)
-    {
-        die("gethostbyname");
-    }
-    sysutil_syslog("Ok",LOG_USER | LOG_INFO);
-    return inet_ntoa(*(struct in_addr *)(host->h_addr_list[0]));
+    return inet_ntoa(*(struct in_addr *)(p_raw_addr));
 }
 
 int sysutil_inet_aton(
@@ -1595,7 +1612,6 @@ void sysutil_prctl(int option)
         die("prctl");
 }
 
-
 void sysutil_capnetbind()
 {
     cap_t caps = cap_init();
@@ -1613,4 +1629,33 @@ void sysutil_capnetbind()
 
     cap_free(caps);
 }
+
+const char * sysutil_localnet_ipaddress()
+{
+    struct ifaddrs *if_addrs = NULL;
+    struct ifaddrs *if_next = NULL;
+
+    if(getifaddrs(&if_addrs))
+    {
+        die("getifaddrs");
+    }
+
+    for(if_next = if_addrs; if_next != NULL; if_next = if_next->ifa_next)
+    {
+        if(!sysutil_strcmp(if_next->ifa_name,"lo"))
+            continue;
+        if(if_next->ifa_addr->sa_family == AF_INET)
+        {
+            char *p_ip = (char *)sysutil_malloc(INET_ADDRSTRLEN);
+            return inet_ntop(AF_INET,&(((struct sockaddr_in *)if_next->ifa_addr)->sin_addr),p_ip,INET_ADDRSTRLEN);
+        }
+    }
+
+}
+
+
+
+
+
+
 

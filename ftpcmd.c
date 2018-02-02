@@ -72,10 +72,40 @@ void handle_abot()
 
 void handle_cdup(struct ftpd_session *session)
 {
+    struct mystr str_buf = INIT_MYSTR;
+
+    str_append_char(&str_buf,PCMDREQUESTCDUP);
+    set_request_data(session->child_fd,&str_buf);
+    str_free(&str_buf);
 
 }
 
-void handle_cwd(struct ftpd_session *session)
+void handle_type(struct ftpd_session *session, struct mystr *str_arg)
+{
+    struct mystr str_buf = INIT_MYSTR;
+
+    str_append_char(&str_buf,PCMDREQUESTTYPE);
+    str_append_char(&str_buf,' ');
+    str_append_str(&str_buf,str_arg);
+    set_request_data(session->child_fd,&str_buf);
+    str_free(&str_buf);
+
+}
+
+
+void handle_cwd(struct ftpd_session *session, struct mystr *str_arg)
+{
+    struct mystr str_buf = INIT_MYSTR;
+
+    str_append_char(&str_buf,PCMDREQUESTCWD);
+    str_append_char(&str_buf,' ');
+    str_append_str(&str_buf,str_arg);
+    set_request_data(session->child_fd,&str_buf);
+    str_free(&str_buf);
+
+}
+
+void handle_pwd(struct ftpd_session *session)
 {
     struct mystr str_buf = INIT_MYSTR;
 
@@ -84,6 +114,7 @@ void handle_cwd(struct ftpd_session *session)
     str_free(&str_buf);
 
 }
+
 
 void handle_dele()
 {
