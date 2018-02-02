@@ -817,43 +817,61 @@ void sysutil_sockaddr_set_ipv6addr(struct sysutil_sockaddr* p_sockptr,
 void sysutil_sockaddr_set_any(struct sysutil_sockaddr* p_sockaddr)
 {
     if(p_sockaddr->u.u_sockaddr_in.sin_family == AF_INET)
+    {
         p_sockaddr->u.u_sockaddr_in.sin_addr.s_addr = htonl(INADDR_ANY);
+    }
     else if(p_sockaddr->u.u_sockaddr_in6.sin6_family == AF_INET6)
+    {
         inet_pton(AF_INET6,&p_sockaddr->u.u_sockaddr_in6.sin6_addr,htonl(INADDR_ANY));
+    }
+
 }
 unsigned short sysutil_sockaddr_get_port (const struct
                                           sysutil_sockaddr* p_sockptr)
 {
     unsigned short port;
     if(p_sockptr->u.u_sockaddr_in.sin_family == AF_INET)
+    {
         port = ntohs(p_sockptr->u.u_sockaddr_in.sin_port);
+    }
     else if(p_sockptr->u.u_sockaddr_in6.sin6_family == AF_INET6)
+    {
         port = ntohs(p_sockptr->u.u_sockaddr_in6.sin6_port);
+    }
+
     return port;
 }
 void sysutil_sockaddr_set_port(struct sysutil_sockaddr* p_sockptr,
                                    unsigned short the_port)
 {
     if(p_sockptr->u.u_sockaddr_in.sin_family == AF_INET)
+    {
         p_sockptr->u.u_sockaddr_in.sin_port = htons(the_port);
+    }
     else if(p_sockptr->u.u_sockaddr_in6.sin6_family == AF_INET6)
+    {
         p_sockptr->u.u_sockaddr_in6.sin6_port = htons(the_port);
+    }
+
 }
 int sysutil_is_port_reserved(unsigned short port)
 {
-    struct sysutil_sockaddr saddr;
-    struct sockaddr_in addr;
-    int fd;
-    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    addr.sin_port = htons(port);
-    addr.sin_family = AF_INET;
-    saddr.u.u_sockaddr_in = addr;
-    fd = sysutil_get_ipv4_sock();
-    if(fd < 0)
-        return -1;
-    if(sysutil_bind(fd,&saddr) < 0)
-        return 1;
-    return 0;
+    int retval = 0;
+    struct sysutil_sockaddr *p_addr = NULL;
+
+    int sockfd = sysutil_get_ipv4_sock();
+    sysutil_sockaddr_alloc_ipv4(&p_addr);
+    sysutil_sockaddr_set_any(p_addr);
+    sysutil_sockaddr_set_port(p_addr,port);
+
+    if(sysutil_bind(sockfd,p_addr))
+    {
+        retval = 1;
+    }
+
+    sysutil_sockaddr_clear(&p_addr);
+    sysutil_close(sockfd);
+    return retval;
 }
 int sysutil_get_ipsock(const struct sysutil_sockaddr* p_sockaddr)
 {
@@ -910,23 +928,34 @@ struct sysutil_socketpair_retval
 }
 int sysutil_bind(int fd, const struct sysutil_sockaddr* p_sockptr)
 {
+    int retval = 0;
     if(p_sockptr->u.u_sockaddr_in.sin_family == AF_INET)
     {
-        if(bind(fd,(struct sockaddr *)&p_sockptr->u.u_sockaddr_in,sizeof(struct sockaddr_in)) < 0)
+        if(bind(fd,&p_sockptr->u.u_sockaddr,sizeof(*p_sockptr)) < 0)
         {
-            sysutil_syslog("bind",LOG_ERR);
-            return -1;
+            if(errno  == EADDRINUSE){
+                 retval = 1;
+            }
+            else {
+                die("bind");
+            }
+            sysutil_syslog("bind",LOG_ERR | LOG_USER);
         }
     }
     else if(p_sockptr->u.u_sockaddr_in6.sin6_family == AF_INET6)
     {
-        if(bind(fd,(struct sockaddr *)&p_sockptr->u.u_sockaddr_in,sizeof(struct sockaddr_in6)) < 0)
+        if(bind(fd,&p_sockptr->u.u_sockaddr,sizeof(*p_sockptr)) < 0)
         {
-            sysutil_syslog("bind",LOG_ERR| LOG_USER);
-            return -1;
+            if(errno  == EADDRINUSE){
+                 retval = 1;
+            }
+            else {
+                die("bind");
+            }
+            sysutil_syslog("bind",LOG_ERR | LOG_USER);
         }
     }
-    return 0;
+    return retval;
 }
 int sysutil_listen(int fd, const unsigned int backlog)
 {

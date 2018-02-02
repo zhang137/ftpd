@@ -197,6 +197,7 @@ int prepare_port_pattern(struct mystr *str_arg,struct ftpd_session *session)
         int sockfd;
         struct sysutil_sockaddr *local = NULL;
         sockfd = sysutil_get_ipv4_sock();
+        sysutil_activate_linger(sockfd);
         sysutil_activate_noblock(sockfd);
 
         sysutil_sockaddr_alloc_ipv4(&local);
@@ -233,17 +234,25 @@ int prepare_pasv_pattern(struct ftpd_session *session)
 {
     int sockfd;
 
+
     {
         int port;
         int p_real,p_imaginary;
-
-        port = 1025 +  rand() % (65536-1024);
-        p_real = port / 256;
-        p_imaginary = port % 256;
         srand(time(NULL));
 
-        struct sysutil_sockaddr *local = NULL;
+        sysutil_syslog("select port",LOG_INFO | LOG_USER);
 
+        do {
+
+            port = 1025 +  rand() % (65530-1024);
+            p_real = port / 256;
+            p_imaginary = port % 256;
+
+        }while(sysutil_is_port_reserved(port));
+
+        sysutil_syslog("",LOG_INFO | LOG_USER);
+
+        struct sysutil_sockaddr *local = NULL;
         sockfd = sysutil_get_ipv4_sock();
         sysutil_activate_noblock(sockfd);
 
@@ -337,7 +346,13 @@ int prepare_list(struct ftpd_session *session)
 
     if(retval)
         set_respond_data(session->parent_fd,PCMDRESPONDLISTOK);
+
     sysutil_shutdown_failok(session->data_fd);
+    if(session->pasv_listen_fd)
+    {
+        sysutil_shutdown_failok(session->pasv_listen_fd);
+        session->pasv_listen_fd = 0;
+    }
 
     return retval;
 }
