@@ -18,7 +18,7 @@ void recv_portmod_socket(struct ftpd_session *session);
 void deal_parent_respond(struct ftpd_session *session);
 
 int prepare_port_pattern(struct mystr *str_arg,struct ftpd_session *session);
-int prepare_pasv_pattern(struct mystr *str_arg,struct ftpd_session *session);
+int prepare_pasv_pattern(struct ftpd_session *session);
 int prepare_pwd(struct ftpd_session *session);
 int prepare_cdup(struct ftpd_session *session);
 int prepare_mkd(struct mystr *str_arg,struct ftpd_session *session);

@@ -141,6 +141,9 @@ void wait_data_connection(struct ftpd_session *session)
         else if(str_equal_text(&str_cmd,"PORT")) {
             handle_port(session,&str_arg);
         }
+        else if(str_equal_text(&str_cmd,"PASV")) {
+            handle_pasv(session);
+        }
         else if(str_equal_text(&str_cmd,"LIST")) {
             handle_list(session);
         }

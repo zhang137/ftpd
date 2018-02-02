@@ -8,9 +8,13 @@
 #include "commoncode.h"
 #include "dataprocess.h"
 
-void handle_pasv(struct ftpd_session *session, struct mystr *str_arg)
+void handle_pasv(struct ftpd_session *session)
 {
+    struct mystr str_buf = INIT_MYSTR;
 
+    str_append_char(&str_buf,PCMDREQUESTPASV);
+    set_request_data(session->child_fd,&str_buf);
+    str_free(&str_buf);
 }
 
 void handle_user(struct ftpd_session *session, struct mystr *str_arg)

@@ -135,7 +135,7 @@ int parse_cmd(struct ftpd_session *session, struct mystr *p_str)
         retval = prepare_port_pattern(p_str,session);
         break;
     case PCMDREQUESTPASV:
-        retval = prepare_pasv_pattern(p_str,session);
+        retval = prepare_pasv_pattern(session);
         break;
     case PCMDREQUESTPWD:
         retval = prepare_pwd(session);
