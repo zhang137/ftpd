@@ -128,7 +128,6 @@ void handle_help()
 
 void handle_list(struct ftpd_session *session)
 {
-    write_cmd_respond(FTPD_CMDWRIO,FTP_DATACONN,"Here comes the directory listing.\n");
 
     struct mystr str_buf = INIT_MYSTR;
     str_append_char(&str_buf,PCMDREQUESTLIST);

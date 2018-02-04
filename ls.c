@@ -38,13 +38,10 @@ int util_ls(int fd,const char *ptrPath)
     char *entries_permission = (char *)sysutil_malloc(sizeof(char) * 11);
     char *p_buf = (char *)sysutil_malloc(256);
 
-    if(access(ptrPath,F_OK))
-        die("access");
-
-    p_Dir = sysutil_opendir(ptrPath);
-    if(!p_Dir)
+    sysutil_syslog(ptrPath,LOG_INFO| LOG_USER);
+    if( access(ptrPath,F_OK) || !(p_Dir = sysutil_opendir(ptrPath)))
     {
-        die("opendir");
+        return 0;
     }
 
     while(ptr_dname = sysutil_next_dirent(p_Dir))
@@ -62,7 +59,7 @@ int util_ls(int fd,const char *ptrPath)
            || ptr_dname[0] == '.')
            continue;
         memset(entries_permission,0,11);
-        if(!stat(ptr_dname,statbuf))
+        if(!sysutil_stat(ptr_dname,&statbuf))
         {
             memcpy(entries_permission,"----------",10);
 
@@ -101,17 +98,22 @@ int util_ls(int fd,const char *ptrPath)
             p_pwd = sysutil_getpwuid(statbuf->st_uid);
             p_grp = sysutil_getgrgid(statbuf->st_gid);
 
-            char *ptr_time = ctime(&statbuf->st_mtim);
-            ptr_time[strlen(ptr_time) - 1] = '\0';
+            struct tm *p_tm = NULL;
+            char ptr_time[64];
+            p_tm = localtime(&statbuf->st_mtim);
+
+            strftime(ptr_time,64,"%b %d %H:%M",p_tm);
 
             sysutil_memclr(p_buf,256);
-            sprintf(p_buf,"%s %*d %s  %s  %*d  %s  %s",entries_permission,linknum_align,statbuf->st_nlink,
-                    p_pwd->pw_name,p_grp->gr_name,filesize_align,statbuf->st_size ,ptr_time,ptr_dname);
+            sprintf(p_buf,"%s    %d         %s         %s         %d %s %s",entries_permission,/*linknum_align,*/statbuf->st_nlink,
+                    p_pwd->pw_name,p_grp->gr_name/*,filesize_align*/,statbuf->st_size ,ptr_time,ptr_dname);
              write_data_respond(fd,1,p_buf);
         }
     }
     sysutil_free(p_buf);
     sysutil_closedir(p_Dir);
     sysutil_free(entries_permission);
+    sysutil_syslog(ptrPath,LOG_INFO| LOG_USER);
+
     return 1;
 }

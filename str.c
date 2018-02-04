@@ -111,7 +111,7 @@ const char* str_getbuf(const struct mystr* p_str)
 
 int str_strcmp(const struct mystr* p_str1, const struct mystr* p_str2)
 {
-    return str_equal_internal(p_str1->pbuf,p_str2->pbuf,p_str1->num_len,p_str2->num_len);
+    return str_equal_internal(p_str1->pbuf,p_str1->num_len,p_str2->pbuf,p_str2->num_len);
 }
 int str_equal_internal(const char *p_ptr1,unsigned int ptr1_size,
                        const char *p_ptr2,unsigned int ptr2_size)

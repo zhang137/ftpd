@@ -163,6 +163,9 @@ void deal_parent_respond(struct ftpd_session *session)
     case PCMDRESPONDLISTOK:
         write_cmd_respond(FTPD_CMDWRIO,FTP_TRANSFEROK,"Directory send OK.\n");
         break;
+    case PCMDRESPONDLISTFAIL:
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Directory send Failed.\n");
+        break;
     };
 }
 
@@ -232,6 +235,7 @@ int prepare_port_pattern(struct mystr *str_arg,struct ftpd_session *session)
     sysutil_syslog("connect successed",LOG_INFO | LOG_USER);
     session->data_fd = sockfd;
     session->p_port_sockaddr = remote;
+    session->is_pasv = 0;
 
     set_respond_data(session->parent_fd,PCMDRESPONDPORTOK);
     //sysutil_sendfd(session->parent_fd,sockfd);
@@ -311,6 +315,7 @@ int prepare_pasv_pattern(struct ftpd_session *session)
     session->data_fd = client_fd;
     session->pasv_listen_fd = sockfd;
     session->p_remote_addr = remote;
+    session->is_pasv = 1;
 
     return 1;
 }
@@ -335,25 +340,31 @@ int prepare_pwd(struct ftpd_session *session)
 int prepare_list(struct ftpd_session *session)
 {
     int retval = 0;
+    const char *p_pwd = NULL;
+    p_pwd = sysutil_getcwd(NULL,0);
 
+    write_cmd_respond(FTPD_CMDWRIO,FTP_DATACONN,"Here comes the directory listing.\n");
+    retval = util_ls(session->data_fd,p_pwd);
+
+     sysutil_syslog("ls...",LOG_INFO| LOG_USER);
+
+    if(!retval)
     {
-        struct mystr *str_pwd = NULL;
-        struct mystr_list *p_visited_dir_list = session->p_visited_dir_list;
-
-        str_pwd = str_list_get_pstr(p_visited_dir_list,
-                       str_list_get_length(p_visited_dir_list)-1);
-
-        retval = util_ls(session->data_fd,str_pwd->pbuf);
+        set_respond_data(session->parent_fd,PCMDRESPONDLISTFAIL);
+        return;
     }
 
-    if(retval)
-        set_respond_data(session->parent_fd,PCMDRESPONDLISTOK);
-
+    set_respond_data(session->parent_fd,PCMDRESPONDLISTOK);
     sysutil_shutdown_failok(session->data_fd);
-    if(session->pasv_listen_fd)
+
+    if(session->is_pasv)
     {
-        sysutil_shutdown_failok(session->pasv_listen_fd);
-        session->pasv_listen_fd = 0;
+        sysutil_close(session->pasv_listen_fd);
+        session->pasv_listen_fd = -1;
+        sysutil_sockaddr_clear(&session->p_remote_addr);
+    }else
+    {
+        sysutil_sockaddr_clear(&session->p_port_sockaddr);
     }
 
     return retval;
@@ -385,51 +396,50 @@ int prepare_type(struct mystr *str_arg, struct ftpd_session *session)
 int prepare_cdup(struct ftpd_session *session)
 {
 
-    sysutil_chdir(".");
+    sysutil_chdir("..");
 
-    struct mystr *str_pwd = NULL;
     struct mystr str_buf = INIT_MYSTR;
 
     str_alloc_text(&str_buf,sysutil_getcwd(NULL,0));
     struct mystr_list *p_visited_dir_list = session->p_visited_dir_list;
-    str_pwd = str_list_get_pstr(p_visited_dir_list,
-                       str_list_get_length(p_visited_dir_list)-1);
 
-    if(!str_list_contains_str(&str_pwd,&str_buf))
+    if(!str_list_contains_str(p_visited_dir_list,&str_buf))
     {
         str_list_add(p_visited_dir_list,&str_buf);
     }
     write_cmd_respond(FTPD_CMDWRIO,FTP_CWDOK,"Directory successfully changed.\n");
+    return 1;
 }
 
 int prepare_cwd(struct mystr *str_arg,struct ftpd_session *session)
 {
     struct mystr str_buf = INIT_MYSTR;
-
     str_split_char(str_arg,&str_buf,' ');
+
+    sysutil_syslog(str_buf.pbuf,LOG_INFO| LOG_USER);
+
     if(str_isempty(&str_buf) || str_all_space(&str_buf) || str_contains_unprintable(&str_buf)
                             || sysutil_chdir(str_buf.pbuf))
     {
         write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect path.\n");
+        return 0;
     }
-    str_free(&str_buf);
 
-    struct mystr *str_pwd = NULL;
-
-    str_alloc_text(&str_buf,sysutil_getcwd(NULL,0));
     struct mystr_list *p_visited_dir_list = session->p_visited_dir_list;
-    str_pwd = str_list_get_pstr(p_visited_dir_list,
-                       str_list_get_length(p_visited_dir_list)-1);
 
-    if(!str_list_contains_str(&str_buf,&str_buf))
+    sysutil_syslog("list add",LOG_INFO| LOG_USER);
+
+    if(!str_list_contains_str(p_visited_dir_list,&str_buf))
     {
         str_list_add(p_visited_dir_list,&str_buf);
-    }else
-    {
+    }
+    else {
         str_free(&str_buf);
     }
 
+    sysutil_syslog("list add OK",LOG_INFO|LOG_USER);
     write_cmd_respond(FTPD_CMDWRIO,FTP_CWDOK,"Directory successfully changed.\n");
+    return 1;
 }
 
 int prepare_mkd(struct mystr *str_arg,struct ftpd_session *session)

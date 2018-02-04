@@ -380,16 +380,16 @@ int sysutil_write_loop(const int fd, const void* p_buf, unsigned int size)
     return 0;
 }
 
-
 int sysutil_stat(const char* p_name, struct sysutil_statbuf** p_ptr)
 {
-    *p_ptr = sysutil_malloc(sizeof(**p_ptr));
+    *p_ptr = (struct sysutil_statbuf*)sysutil_malloc(sizeof(**p_ptr));
     if(stat(p_name,*p_ptr) < 0)
     {
         return -1;
     }
     return 0;
 }
+
 int sysutil_lstat(const char* p_name, struct sysutil_statbuf** p_ptr)
 {
     *p_ptr = sysutil_malloc(sizeof(**p_ptr));

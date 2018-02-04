@@ -11,10 +11,9 @@ int main()
 
     struct ftpd_session session = {
         NULL, NULL, NULL, 0, 0, 0, NULL,
-        0, 0, 0, 0, 0,0, INIT_MYSTR, INIT_MYSTR,
-        0, 0,INIT_MYSTR,0,NULL, INIT_MYSTR,
-        INIT_MYSTR, INIT_MYSTR, 0, 0,INIT_MYSTR, INIT_MYSTR,
-        0, 0, 0, 0,INIT_MYSTR, 1
+        0, 0, 0, 0, 0,0, INIT_MYSTR, INIT_MYSTR, 0, 0, 0,
+        INIT_MYSTR,0,NULL, INIT_MYSTR, INIT_MYSTR, INIT_MYSTR,
+        0, 0,INIT_MYSTR, INIT_MYSTR, 0, 0, 0, 0,INIT_MYSTR, 1
     };
 
     session.idle_timeout = 20;

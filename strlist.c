@@ -57,8 +57,8 @@ int str_list_contains_str(const struct mystr_list* p_list,
     for(i = 0; i < p_list->list_len; i++)
     {
         struct mystr *pstr = pTemp->pnodes + i;
-        if(!str_equal(pstr,p_str))
-            return 1;
+        if(str_equal(pstr,p_str))
+            return i;
     }
     return 0;
 }
