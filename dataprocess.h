@@ -7,16 +7,18 @@
 
 int get_cmd_responds(int fd);
 int get_netdata(struct mystr *str_arg,char term);
-int read_cmd_data(int fd,struct mystr *strbuf,unsigned int size);
-void write_cmd_data(int fd,struct mystr *strbuf,unsigned int size);
+int read_data(int fd,struct mystr *strbuf,unsigned int size);
+void write_data(int fd,struct mystr *strbuf,unsigned int size);
 void write_data_respond(int fd, int data_mode,const char *resp_str);
 void write_cmd_respond(int fd, unsigned resp_code,const char *resp_str);
+int write_file_data(struct ftpd_session *session, const char *file_name);
 int message_recv_peek(int fd,struct mystr *p_str,unsigned int datalen);
 void get_request_data(int fd, struct mystr* str_buf);
 void set_login_data(int fd, struct mystr* str_pass,struct mystr* str_user);
 void set_respond_data(int fd, enum PUNIXLOGINSTATUS status);
 void recv_portmod_socket(struct ftpd_session *session);
 void deal_parent_respond(struct ftpd_session *session);
+void clear_data_connection(struct ftpd_session *session);
 
 int prepare_port_pattern(struct mystr *str_arg,struct ftpd_session *session);
 int prepare_pasv_pattern(struct ftpd_session *session);
@@ -29,5 +31,7 @@ int prepare_rest(struct mystr *str_arg,struct ftpd_session *session);
 int prepare_list(struct ftpd_session *session);
 int prepare_rmd(struct mystr *str_arg,struct ftpd_session *session);
 int prepare_dele(struct mystr *str_arg,struct ftpd_session *session);
+int prepare_size(struct mystr *str_arg,struct ftpd_session *session);
+int prepare_mdtm(struct mystr *str_arg,struct ftpd_session *session);
 
 #endif // DATAPROCESS_H_INCLUDED

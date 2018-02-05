@@ -224,20 +224,15 @@ int sysutil_open_file(const char* p_filename,
     switch(mode)
     {
     case kVSFSysUtilOpenReadOnly:
-        retval = open(p_filename,O_NONBLOCK|O_WRONLY);
+        retval = open(p_filename,O_NONBLOCK|O_RDONLY);
         break;
     case kVSFSysUtilOpenWriteOnly:
         retval = open(p_filename,O_NONBLOCK|O_WRONLY);
         break;
     case kVSFSysUtilOpenReadWrite:
-        retval = open(p_filename,O_NONBLOCK|O_WRONLY);
+        retval = open(p_filename,O_NONBLOCK|O_RDWR);
         break;
     };
-
-    if(retval < 0)
-    {
-        die("open error");
-    }
 
     return retval;
 }
@@ -259,7 +254,12 @@ int sysutil_create_or_open_file(const char* p_filename, unsigned int mode)
 }
 void sysutil_dupfd2(int old_fd, int new_fd)
 {
-    dup2(old_fd,new_fd);
+    int retval;
+    retval = dup2(old_fd,new_fd);
+    if(retval < 0)
+    {
+        die("dup2");
+    }
 }
 void sysutil_close(int fd)
 {
@@ -385,6 +385,7 @@ int sysutil_stat(const char* p_name, struct sysutil_statbuf** p_ptr)
     *p_ptr = (struct sysutil_statbuf*)sysutil_malloc(sizeof(**p_ptr));
     if(stat(p_name,*p_ptr) < 0)
     {
+        sysutil_free(*p_ptr);
         return -1;
     }
     return 0;

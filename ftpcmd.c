@@ -153,6 +153,34 @@ void handle_noop()
 
 }
 
+void handle_size(struct ftpd_session *session, struct mystr *str_arg)
+{
+    struct mystr str_buf = INIT_MYSTR;
+
+    str_append_char(&str_buf,PCMDREQUESTSIZE);
+    str_append_char(&str_buf,' ');
+    str_append_str(&str_buf,str_arg);
+
+    set_request_data(session->child_fd,&str_buf);
+    str_free(str_arg);
+
+    deal_parent_respond(session);
+}
+
+void handle_mdtm(struct ftpd_session *session, struct mystr *str_arg)
+{
+    struct mystr str_buf = INIT_MYSTR;
+
+    str_append_char(&str_buf,PCMDREQUESTMDTM);
+    str_append_char(&str_buf,' ');
+    str_append_str(&str_buf,str_arg);
+
+    set_request_data(session->child_fd,&str_buf);
+    str_free(str_arg);
+
+    deal_parent_respond(session);
+}
+
 void handle_port(struct ftpd_session *session, struct mystr *str_arg)
 {
     struct mystr str_buf = INIT_MYSTR;
@@ -173,36 +201,43 @@ void handle_quit()
     sysutil_exit(0);
 }
 
-void handle_rest()
+void handle_rest(struct ftpd_session *session, struct mystr *str_arg)
 {
 
 }
 
-void handle_retr()
+void handle_retr(struct ftpd_session *session, struct mystr *str_arg)
 {
+    struct mystr str_buf = INIT_MYSTR;
 
+    str_append_char(&str_buf,PCMDREQUESTRETR);
+    str_append_char(&str_buf,' ');
+    str_append_str(&str_buf,str_arg);
+
+    set_request_data(session->child_fd,&str_buf);
+    str_free(str_arg);
 }
-void handle_rmd()
-{
-
-}
-
-void handle_rnfr()
-{
-
-}
-
-void handle_stor()
-{
-
-}
-
-void handle_stou()
+void handle_rmd(struct ftpd_session *session, struct mystr *str_arg)
 {
 
 }
 
-void handle_appe()
+void handle_rnfr(struct ftpd_session *session, struct mystr *str_arg)
+{
+
+}
+
+void handle_stor(struct ftpd_session *session, struct mystr *str_arg)
+{
+
+}
+
+void handle_stou(struct ftpd_session *session, struct mystr *str_arg)
+{
+
+}
+
+void handle_appe(struct ftpd_session *session, struct mystr *str_arg)
 {
 
 }

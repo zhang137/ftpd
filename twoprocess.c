@@ -171,6 +171,12 @@ int parse_cmd(struct ftpd_session *session, struct mystr *p_str)
     case PCMDREQUESTDELE:
         prepare_dele(p_str,session);
         break;
+    case PCMDREQUESTSIZE:
+        prepare_size(p_str,session);
+        break;
+    case PCMDREQUESTMDTM:
+        prepare_mdtm(p_str,session);
+        break;
     }
 
     str_empty(p_str);

@@ -34,7 +34,7 @@ int util_ls(int fd,const char *ptrPath)
 
     const char *ptr_dname;
     double total_size = 0;
-    int j = 0,linknum_align = 0,filesize_align = 0;
+    int j = 0;//linknum_align = 0,filesize_align = 0;
     char *entries_permission = (char *)sysutil_malloc(sizeof(char) * 11);
     char *p_buf = (char *)sysutil_malloc(256);
 
@@ -44,13 +44,14 @@ int util_ls(int fd,const char *ptrPath)
         return 0;
     }
 
-    while(ptr_dname = sysutil_next_dirent(p_Dir))
-    {
-        sysutil_stat(ptr_dname,&statbuf);
-        filesize_align = max_align(filesize_align,statbuf->st_size);
-        linknum_align = max_align(linknum_align,statbuf->st_nlink);
-    }
-    sysutil_rewinddir(p_Dir);
+//    while(ptr_dname = sysutil_next_dirent(p_Dir))
+//    {
+//        sysutil_stat(ptr_dname,&statbuf);
+//        filesize_align = max_align(filesize_align,statbuf->st_size);
+//        linknum_align = max_align(linknum_align,statbuf->st_nlink);
+//        sysutil_free(statbuf);
+//    }
+//    sysutil_rewinddir(p_Dir);
 
     while(ptr_dname = sysutil_next_dirent(p_Dir))
     {
@@ -108,6 +109,7 @@ int util_ls(int fd,const char *ptrPath)
             sprintf(p_buf,"%s    %d         %s         %s         %d %s %s",entries_permission,/*linknum_align,*/statbuf->st_nlink,
                     p_pwd->pw_name,p_grp->gr_name/*,filesize_align*/,statbuf->st_size ,ptr_time,ptr_dname);
              write_data_respond(fd,1,p_buf);
+             sysutil_free(statbuf);
         }
     }
     sysutil_free(p_buf);

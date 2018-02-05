@@ -54,9 +54,7 @@ struct mystr get_rpc_request(struct mystr *str_arg)
     nread = get_netdata(&str_line,term);
     if(!nread){
         sysutil_exit(-1);
-        handle_quit();
     }
-
 
     if(str_get_char_at(&str_line,nread-1) == '\r') {
         str_alloc_alt_term(&str_cmd,str_line.pbuf,'\0');
@@ -156,10 +154,13 @@ void wait_data_connection(struct ftpd_session *session)
             handle_type(session,&str_arg);
         }
         else if(str_equal_text(&str_cmd,"REST")) {
-            handle_rest(session);
+            handle_rest(session,&str_arg);
+        }
+        else if(str_equal_text(&str_cmd,"SIZE")) {
+            handle_size(session,&str_arg);
         }
         else if(str_equal_text(&str_cmd,"RETR")) {
-            handle_retr(session);
+            handle_retr(session,&str_arg);
         }
         else if(str_equal_text(&str_cmd,"MKD")) {
             handle_mkd(session,&str_arg);
