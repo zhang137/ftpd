@@ -541,9 +541,11 @@ int str_getline(const struct mystr* p_str, struct mystr* p_line_str,
         //123\r\n
         p_line_str->pbuf = sysutil_malloc(ipos+1);
         p_line_str->num_len = p_line_str->alloc_bytes = ipos;
+
         sysutil_memclr(p_line_str->pbuf,ipos+1);
         sysutil_memcpy(p_line_str->pbuf,p_str->pbuf,ipos);
         *p_pos = ipos;
+
         return 1;
     }
     return 0;

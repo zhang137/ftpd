@@ -109,9 +109,10 @@ void common_request(struct ftpd_session *session)
 
     while(1)
     {
-        get_request_data(session->parent_fd,&str_buf);
+        get_internal_cmd_data(session->parent_fd,&str_buf);
 
         parse_cmd(session,&str_buf);
+        str_empty(&str_buf);
 
         if(sysutil_wait_reap_one())
             sysutil_exit(0);
@@ -159,6 +160,9 @@ void wait_data_connection(struct ftpd_session *session)
         else if(str_equal_text(&str_cmd,"SIZE")) {
             handle_size(session,&str_arg);
         }
+        else if(str_equal_text(&str_cmd,"MDTM")) {
+            handle_mdtm(session,&str_arg);
+        }
         else if(str_equal_text(&str_cmd,"RETR")) {
             handle_retr(session,&str_arg);
         }
@@ -185,30 +189,26 @@ int prepare_login(struct mystr *str_arg,struct ftpd_session *session)
     int ulong_size = sizeof(unsigned long);
     struct mystr str_user = INIT_MYSTR;
     struct mystr str_pass = INIT_MYSTR;
+    struct spwd *passwd = NULL;
 
     str_split_char(str_arg,&str_user,' ');
     str_split_char(&str_user,&str_pass,' ');
 
+    sysutil_syslog(str_user.pbuf,LOG_INFO | LOG_USER);
+    sysutil_syslog(str_pass.pbuf,LOG_INFO | LOG_USER);
+
     if(!str_equal_text(&str_user,"anonymous"))
     {
-        struct spwd *passwd = getspnam(str_user.pbuf);
-        if(!passwd)
-        {
-            str_free(&str_user);
-            str_free(&str_pass);
-            session->login_fails = 1;
-            set_respond_data(session->parent_fd,PCMDRESPONDLOGINFAIL);
-            return 0;
-        }
 
         if(str_isempty(&str_pass) || str_all_space(&str_pass) || str_getlen(&str_pass) > 128
-                        || str_contains_unprintable(&str_pass) || sysutil_strcmp(passwd->sp_pwdp,
-                                                    (char*)crypt(str_pass.pbuf, passwd->sp_pwdp)))
+            || str_contains_unprintable(&str_pass) || !(passwd = getspnam(str_user.pbuf)) ||
+           sysutil_strcmp(passwd->sp_pwdp,(char*)crypt(str_pass.pbuf, passwd->sp_pwdp)))
         {
             str_free(&str_user);
             str_free(&str_pass);
             session->login_fails = 1;
-            set_respond_data(session->parent_fd,PCMDRESPONDLOGINFAIL);
+
+            write_internal_cmd_respond(session->parent_fd,PCMDRESPONDLOGINFAIL,NULL);
             return 0;
         }
     }
@@ -218,9 +218,9 @@ int prepare_login(struct mystr *str_arg,struct ftpd_session *session)
         str_alloc_text(&str_user,"ftp");
     }
 
+    sysutil_syslog("login ok",LOG_INFO | LOG_USER);
 
-    set_respond_data(session->parent_fd,PCMDRESPONDLOGINOK);
-
+    write_internal_cmd_respond(session->parent_fd,PCMDRESPONDLOGINOK,NULL);
     close_parent_context(session);
 
     session->user_str = str_user;
@@ -233,6 +233,7 @@ int prepare_login(struct mystr *str_arg,struct ftpd_session *session)
 
 void login_user(struct ftpd_session *session)
 {
+
     struct sysutil_user *pw = sysutil_getpwnam(session->user_str.pbuf);
     if(!pw)
     {
@@ -259,6 +260,10 @@ void login_user(struct ftpd_session *session)
     p_visited_list->alloc_len = p_visited_list->list_len = 0;
     str_list_add(p_visited_list,&str_home);
     session->p_visited_dir_list = p_visited_list;
+
+//    sysutil_close(STDIN_FILENO);
+//    sysutil_close(STDOUT_FILENO);
+//    sysutil_close(STDERR_FILENO);
 
 }
 

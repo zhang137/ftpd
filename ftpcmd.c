@@ -13,8 +13,11 @@ void handle_pasv(struct ftpd_session *session)
     struct mystr str_buf = INIT_MYSTR;
 
     str_append_char(&str_buf,PCMDREQUESTPASV);
-    set_request_data(session->child_fd,&str_buf);
+
+    write_internal_cmd_request(session->child_fd,&str_buf);
     str_free(&str_buf);
+
+    deal_parent_respond(session);
 }
 
 void handle_user(struct ftpd_session *session, struct mystr *str_arg)
@@ -36,7 +39,7 @@ void handle_user(struct ftpd_session *session, struct mystr *str_arg)
 
 void handle_pass(struct ftpd_session *session, struct mystr *str_arg)
 {
-    int retval;
+
     if(str_isempty(&session->user_str))
     {
         write_cmd_respond(FTPD_CMDWRIO,FTP_NEEDUSER,"Please first login with USER.\n");
@@ -56,8 +59,8 @@ void handle_pass(struct ftpd_session *session, struct mystr *str_arg)
     str_append_char(&str_buf,' ');
     str_append_str(&str_buf,str_arg);
 
-    set_request_data(session->child_fd,&str_buf);
-    str_free(str_arg);
+    write_internal_cmd_request(session->child_fd,&str_buf);
+    str_free(&str_buf);
 
     deal_parent_respond(session);
     if(!session->login_fails)
@@ -75,9 +78,11 @@ void handle_cdup(struct ftpd_session *session)
     struct mystr str_buf = INIT_MYSTR;
 
     str_append_char(&str_buf,PCMDREQUESTCDUP);
-    set_request_data(session->child_fd,&str_buf);
+
+    write_internal_cmd_request(session->child_fd,&str_buf);
     str_free(&str_buf);
 
+    deal_parent_respond(session);
 }
 
 void handle_type(struct ftpd_session *session, struct mystr *str_arg)
@@ -87,9 +92,11 @@ void handle_type(struct ftpd_session *session, struct mystr *str_arg)
     str_append_char(&str_buf,PCMDREQUESTTYPE);
     str_append_char(&str_buf,' ');
     str_append_str(&str_buf,str_arg);
-    set_request_data(session->child_fd,&str_buf);
+
+    write_internal_cmd_request(session->child_fd,&str_buf);
     str_free(&str_buf);
 
+    deal_parent_respond(session);
 }
 
 
@@ -100,9 +107,11 @@ void handle_cwd(struct ftpd_session *session, struct mystr *str_arg)
     str_append_char(&str_buf,PCMDREQUESTCWD);
     str_append_char(&str_buf,' ');
     str_append_str(&str_buf,str_arg);
-    set_request_data(session->child_fd,&str_buf);
+
+    write_internal_cmd_request(session->child_fd,&str_buf);
     str_free(&str_buf);
 
+    deal_parent_respond(session);
 }
 
 void handle_pwd(struct ftpd_session *session)
@@ -110,9 +119,11 @@ void handle_pwd(struct ftpd_session *session)
     struct mystr str_buf = INIT_MYSTR;
 
     str_append_char(&str_buf,PCMDREQUESTPWD);
-    set_request_data(session->child_fd,&str_buf);
+
+    write_internal_cmd_request(session->child_fd,&str_buf);
     str_free(&str_buf);
 
+    deal_parent_respond(session);
 }
 
 
@@ -131,26 +142,27 @@ void handle_list(struct ftpd_session *session)
 
     struct mystr str_buf = INIT_MYSTR;
     str_append_char(&str_buf,PCMDREQUESTLIST);
-    set_request_data(session->child_fd,&str_buf);
+
+    write_internal_cmd_request(session->child_fd,&str_buf);
     str_free(&str_buf);
 
+    write_cmd_respond(FTPD_CMDWRIO,FTP_DATACONN,"Here comes the directory listing.\n");
     deal_parent_respond(session);
-
 }
 
 void handle_mkd(struct ftpd_session *session, struct mystr *str_arg)
 {
-
+    //deal_parent_respond(session);
 }
 
 void handle_mode()
 {
-
+    //deal_parent_respond(session);
 }
 
 void handle_noop()
 {
-
+    //deal_parent_respond(session);
 }
 
 void handle_size(struct ftpd_session *session, struct mystr *str_arg)
@@ -161,8 +173,8 @@ void handle_size(struct ftpd_session *session, struct mystr *str_arg)
     str_append_char(&str_buf,' ');
     str_append_str(&str_buf,str_arg);
 
-    set_request_data(session->child_fd,&str_buf);
-    str_free(str_arg);
+    write_internal_cmd_request(session->child_fd,&str_buf);
+    str_free(&str_buf);
 
     deal_parent_respond(session);
 }
@@ -175,10 +187,11 @@ void handle_mdtm(struct ftpd_session *session, struct mystr *str_arg)
     str_append_char(&str_buf,' ');
     str_append_str(&str_buf,str_arg);
 
-    set_request_data(session->child_fd,&str_buf);
-    str_free(str_arg);
+    write_internal_cmd_request(session->child_fd,&str_buf);
+    str_free(&str_buf);
 
     deal_parent_respond(session);
+
 }
 
 void handle_port(struct ftpd_session *session, struct mystr *str_arg)
@@ -189,7 +202,7 @@ void handle_port(struct ftpd_session *session, struct mystr *str_arg)
     str_append_char(&str_buf,' ');
     str_append_str(&str_buf,str_arg);
 
-    set_request_data(session->child_fd,&str_buf);
+    write_internal_cmd_request(session->child_fd,&str_buf);
     str_free(str_arg);
 
     deal_parent_respond(session);
@@ -203,7 +216,7 @@ void handle_quit()
 
 void handle_rest(struct ftpd_session *session, struct mystr *str_arg)
 {
-
+    //deal_parent_respond(session);
 }
 
 void handle_retr(struct ftpd_session *session, struct mystr *str_arg)
@@ -214,41 +227,41 @@ void handle_retr(struct ftpd_session *session, struct mystr *str_arg)
     str_append_char(&str_buf,' ');
     str_append_str(&str_buf,str_arg);
 
-    set_request_data(session->child_fd,&str_buf);
+    write_internal_cmd_request(session->child_fd,&str_buf);
     str_free(str_arg);
+
+    deal_parent_respond(session);
 }
 void handle_rmd(struct ftpd_session *session, struct mystr *str_arg)
 {
-
+    //deal_parent_respond(session);
 }
 
 void handle_rnfr(struct ftpd_session *session, struct mystr *str_arg)
 {
-
+    //deal_parent_respond(session);
 }
 
 void handle_stor(struct ftpd_session *session, struct mystr *str_arg)
 {
-
+    //deal_parent_respond(session);
 }
 
 void handle_stou(struct ftpd_session *session, struct mystr *str_arg)
 {
-
+    //deal_parent_respond(session);
 }
 
 void handle_appe(struct ftpd_session *session, struct mystr *str_arg)
 {
-
+    //deal_parent_respond(session);
 }
 
 void handle_syst(struct ftpd_session *session)
 {
     if(!session->login_fails)
     {
-        const char *p_src = NULL;
         struct mystr str_respond = INIT_MYSTR;
-        p_src = sysutil_uname();
 
 #ifdef __linux__
         str_alloc_text(&str_respond,"UNIX Type: L");

@@ -6,6 +6,7 @@
 #include <dirent.h>
 #include <pwd.h>
 #include <grp.h>
+#include "session.h"
 #include "filesize.h"
 
 #define sysutil_group group
@@ -379,6 +380,6 @@ void sysutil_sendfd(int fd, int sendfd);
 void sysutil_recvfd(int fd, int *recvfd);
 void sysutil_prctl(int option);
 void sysutil_capnetbind();
-const char * sysutil_localnet_ipaddress();
+const char * sysutil_localnet_ipaddress(struct ftpd_session *session);
 
 #endif // SYSUTIL_H_INCLUDED

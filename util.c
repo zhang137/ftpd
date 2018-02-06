@@ -39,6 +39,8 @@ void standalone_socket(struct ftpd_session *session)
     if(sysutil_bind(listen_fd,listen_addr))
         die("Port used");
 
+    sysutil_sockaddr_clear(&listen_addr);
+
     if(sysutil_listen(listen_fd,SOMAXCONN))
         die("listen");
 
@@ -55,6 +57,9 @@ void standalone_socket(struct ftpd_session *session)
         }
         sysutil_activate_noblock(client_fd);
         sysutil_set_sockopt(client_fd);
+
+        sysutil_sockaddr_alloc_ipv4(&listen_addr);
+        sysutil_getsockname(client_fd,&listen_addr);
 
         session->p_local_addr = listen_addr;
         session->p_remote_addr = client_addr;

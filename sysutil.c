@@ -965,7 +965,7 @@ int sysutil_listen(int fd, const unsigned int backlog)
 void sysutil_getsockname(int fd, struct sysutil_sockaddr** p_sockptr)
 {
     socklen_t sock_len = sizeof(**p_sockptr);
-    if(getsockname(fd,&(*p_sockptr)->u.u_sockaddr, &sock_len) < 0)
+    if(getsockname(fd,&((*p_sockptr)->u.u_sockaddr), &sock_len) < 0)
         die("getsockname");
 
 }
@@ -1631,24 +1631,32 @@ void sysutil_capnetbind()
     cap_free(caps);
 }
 
-const char * sysutil_localnet_ipaddress()
+const char *sysutil_localnet_ipaddress(struct ftpd_session *session)
 {
     struct ifaddrs *if_addrs = NULL;
     struct ifaddrs *if_next = NULL;
 
+    const char *local_ip = sysutil_inet_ntoa(&(session->p_local_addr->u.u_sockaddr_in.sin_addr));
+    if(!sysutil_strcmp(local_ip,"127.0.0.1"))
+    {
+        return local_ip;
+    }
+
     if(getifaddrs(&if_addrs))
     {
-        die("getifaddrs");
+        return NULL;
     }
 
     for(if_next = if_addrs; if_next != NULL; if_next = if_next->ifa_next)
     {
         if(!sysutil_strcmp(if_next->ifa_name,"lo"))
+        {
             continue;
+        }
+
         if(if_next->ifa_addr->sa_family == AF_INET)
         {
-            char *p_ip = (char *)sysutil_malloc(INET_ADDRSTRLEN);
-            return inet_ntop(AF_INET,&(((struct sockaddr_in *)if_next->ifa_addr)->sin_addr),p_ip,INET_ADDRSTRLEN);
+            return sysutil_inet_ntoa(&(((struct sockaddr_in *)if_next->ifa_addr)->sin_addr));
         }
     }
 

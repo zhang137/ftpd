@@ -104,16 +104,17 @@ void deal_private_req(struct ftpd_session *session)
 
     while(1)
     {
-        get_request_data(session->parent_fd,&str_buf);
+        get_internal_cmd_data(session->parent_fd,&str_buf);
 
         parse_cmd(session,&str_buf);
+        str_empty(&str_buf);
+
         if(!session->login_fails)
             break;
 
         if(sysutil_wait_reap_one())
             sysutil_exit(0);
     }
-    str_free(&str_buf);
 
     user_common_deal(session);
 }

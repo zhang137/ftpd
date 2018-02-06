@@ -106,7 +106,7 @@ int util_ls(int fd,const char *ptrPath)
             strftime(ptr_time,64,"%b %d %H:%M",p_tm);
 
             sysutil_memclr(p_buf,256);
-            sprintf(p_buf,"%s    %d         %s         %s         %d %s %s",entries_permission,/*linknum_align,*/statbuf->st_nlink,
+            sprintf(p_buf,"%s    %d %s         %s         %d %s %s",entries_permission,/*linknum_align,*/statbuf->st_nlink,
                     p_pwd->pw_name,p_grp->gr_name/*,filesize_align*/,statbuf->st_size ,ptr_time,ptr_dname);
              write_data_respond(fd,1,p_buf);
              sysutil_free(statbuf);
