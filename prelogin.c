@@ -28,17 +28,15 @@ void init_connection(struct ftpd_session *session)
         else if(str_equal_text(&str_cmd,"PASS")) {
             handle_pass(session,&str_arg);
         }
-        else if(str_equal_text(&str_cmd,"SYST")) {
-            handle_syst(session);
-        }
         else if(str_equal_text(&str_cmd,"QUIT")) {
             handle_quit();
         }
         else {
             write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINERR,"Please login with USER and PASS.\n");
             str_free(&str_arg);
-
         }
+
+
         str_free(&str_cmd);
 
     }
@@ -110,9 +108,7 @@ void common_request(struct ftpd_session *session)
     while(1)
     {
         get_internal_cmd_data(session->parent_fd,&str_buf);
-
         parse_cmd(session,&str_buf);
-        str_empty(&str_buf);
 
         if(sysutil_wait_reap_one())
             sysutil_exit(0);
@@ -124,10 +120,9 @@ void common_request(struct ftpd_session *session)
 void wait_data_connection(struct ftpd_session *session)
 {
     struct mystr str_cmd = INIT_MYSTR;
-
+    struct mystr str_arg = INIT_MYSTR;
     while(1)
     {
-        struct mystr str_arg = INIT_MYSTR;
         str_cmd = get_rpc_request(&str_arg);
 
         sysutil_syslog(str_cmd.pbuf,LOG_USER | LOG_INFO);
@@ -135,6 +130,12 @@ void wait_data_connection(struct ftpd_session *session)
 
         if(str_equal_text(&str_cmd,"PWD")) {
             handle_pwd(session);
+        }
+        else if(str_equal_text(&str_cmd,"SYST")) {
+            handle_syst(session);
+        }
+        else if(str_equal_text(&str_cmd,"NOOP")) {
+            handle_noop(session);
         }
         else if(str_equal_text(&str_cmd,"CWD")) {
             handle_cwd(session,&str_arg);
@@ -166,8 +167,20 @@ void wait_data_connection(struct ftpd_session *session)
         else if(str_equal_text(&str_cmd,"RETR")) {
             handle_retr(session,&str_arg);
         }
+        else if(str_equal_text(&str_cmd,"STOR")) {
+            handle_stor(session,&str_arg);
+        }
+        else if(str_equal_text(&str_cmd,"STOU")) {
+            handle_stou(session,&str_arg);
+        }
         else if(str_equal_text(&str_cmd,"MKD")) {
             handle_mkd(session,&str_arg);
+        }
+        else if(str_equal_text(&str_cmd,"DELE")) {
+            handle_dele(session,&str_arg);
+        }
+        else if(str_equal_text(&str_cmd,"RMD")) {
+            handle_rmd(session,&str_arg);
         }
         else if(str_equal_text(&str_cmd,"QUIT")) {
             handle_quit();
@@ -178,7 +191,7 @@ void wait_data_connection(struct ftpd_session *session)
 
         }
         str_free(&str_cmd);
-
+        str_free(&str_arg);
     }
 }
 

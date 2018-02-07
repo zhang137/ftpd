@@ -6,6 +6,9 @@
 void private_str_alloc_memchunk(struct mystr* p_str, const char* p_src,
                                 unsigned int len)
 {
+    if(len == 0)
+        return 0;
+
     p_str->pbuf = (char *)sysutil_malloc(len+1);
     p_str->alloc_bytes = len+1;
     p_str->num_len = 0;
@@ -253,9 +256,11 @@ void str_lpad(struct mystr* p_str, const unsigned int min_width)
 {
     int adjust_len = p_str->alloc_bytes + min_width;
     void *ptr_tmp = sysutil_malloc(adjust_len);
+
     sysutil_memclr(ptr_tmp,adjust_len);
     sysutil_memcpy(ptr_tmp+min_width,p_str->pbuf,p_str->num_len);
     sysutil_free(p_str->pbuf);
+
     p_str->pbuf = ptr_tmp;
     p_str->alloc_bytes = adjust_len;
 }
@@ -269,6 +274,15 @@ void str_replace_char(struct mystr* p_str, char from, char to)
             p_str->pbuf[i] = to;
     }
 }
+
+void str_replace_char_index(struct mystr* p_str, int index, char to_char)
+{
+    if(index < 0 || index >= p_str->num_len)
+        return 0;
+
+    p_str->pbuf[index] = to_char;
+}
+
 
 void str_replace_text(struct mystr* p_str, const char* p_from,
                       const char* p_to)
@@ -423,11 +437,14 @@ void str_left(const struct mystr* p_str, struct mystr* p_out,
 void str_right(const struct mystr* p_str, struct mystr* p_out,
                unsigned int chars)
 {
+    if(chars <= 0 ) return;
     if (chars > p_str->num_len)
         chars = p_str->num_len;
 
     int index = p_str->num_len - chars;
+
     private_str_alloc_memchunk(p_out,p_str->pbuf+index,chars);
+
 
 }
 void str_mid_to_end(const struct mystr* p_str, struct mystr* p_out,

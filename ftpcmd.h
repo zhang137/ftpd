@@ -33,7 +33,7 @@ void handle_pwd(struct ftpd_session *session);
 /*
 *删除服务器站点上在路径名中指定的文件。
 */
-void handle_dele();
+void handle_dele(struct ftpd_session *session, struct mystr *str_arg);
 /*
 *服务器通过到客户的控制连接发送有关其实现状态的帮助信息。
 */
@@ -41,7 +41,7 @@ void handle_help();
 /*
 *服务器给客户发送一份列表。
 */
-void handle_list();
+void handle_list(struct ftpd_session *session);
 /*
 *创建一个在路径名中指定的目录（如果是绝对路径名）或当前工作目录的子目录（如果是相对路径名）。
 */
@@ -58,7 +58,7 @@ void handle_mode();
 /*
 *让服务器发送一条OK应答外，它不指定任何操作。
 */
-void handle_noop();
+void handle_noop(struct ftpd_session *session);
 /*
 *为数据连接指定一个IP地址和本地端口。
 */

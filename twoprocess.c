@@ -107,7 +107,6 @@ void deal_private_req(struct ftpd_session *session)
         get_internal_cmd_data(session->parent_fd,&str_buf);
 
         parse_cmd(session,&str_buf);
-        str_empty(&str_buf);
 
         if(!session->login_fails)
             break;
@@ -166,6 +165,9 @@ int parse_cmd(struct ftpd_session *session, struct mystr *p_str)
     case PCMDREQUESTSTOR:
         prepare_stor(p_str,session);
         break;
+    case PCMDREQUESTSTOU:
+        prepare_stou(p_str,session);
+        break;
     case PCMDREQUESTRMD:
         prepare_rmd(p_str,session);
         break;
@@ -177,6 +179,9 @@ int parse_cmd(struct ftpd_session *session, struct mystr *p_str)
         break;
     case PCMDREQUESTMDTM:
         prepare_mdtm(p_str,session);
+        break;
+    case PCMDREQUESTNOOP:
+        prepare_noop(session);
         break;
     }
 

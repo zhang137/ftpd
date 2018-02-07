@@ -79,13 +79,38 @@ void write_cmd_respond(int fd, unsigned resp_code,const char *resp_str)
     str_free(&str_respond);
 }
 
-void write_data_respond(int fd, int data_mode,const char *resp_str)
+void write_remote_transfer_data(int fd, int data_mode,const char *resp_str)
 {
     struct mystr str_respond = INIT_MYSTR;
     str_append_text(&str_respond,resp_str);
+
     if(data_mode)
     {
+        struct mystr str_buf = INIT_MYSTR;
+        str_right(&str_respond,&str_buf,2);
         str_append_text(&str_respond,"\r\n");
+        str_free(&str_buf);
+    }
+
+    write_data(fd,&str_respond,str_respond.num_len);
+    str_free(&str_respond);
+}
+
+void write_local_transfer_data(int fd, int data_mode,const char *resp_str)
+{
+    struct mystr str_respond = INIT_MYSTR;
+    str_alloc_text(&str_respond,resp_str);
+
+    if(data_mode)
+    {
+        char term_char;
+
+        if((term_char = str_get_char_at(&str_respond,str_respond.num_len - 2)) == '\r')
+        {
+            str_replace_char_index(&str_respond,str_respond.num_len - 2,'\n');
+            str_replace_char_index(&str_respond,str_respond.num_len - 1,'\0');
+        }
+
     }
     write_data(fd,&str_respond,str_respond.num_len);
     str_free(&str_respond);
@@ -143,6 +168,68 @@ int write_file_data(struct ftpd_session *session, const char *file_name)
 }
 
 
+int read_file_data(struct ftpd_session *session, int fd,int mode)
+{
+    int recv_buf_size = FTPD_DATA_LEN;
+    filesize_t already_received = 0,recv_size = 0;
+
+    sysutil_syslog("file receiving .....",LOG_USER | LOG_INFO);
+    struct mystr str_buf = INIT_MYSTR;
+    private_str_alloc_memchunk(&str_buf,NULL,recv_buf_size);
+
+    while(1)
+    {
+        str_empty(&str_buf);
+        recv_size = sysutil_read_loop(session->data_fd,str_buf.pbuf,recv_buf_size);
+        if(recv_size <= 0)
+        {
+            if(errno == EINTR)
+                continue;
+            if(!recv_size)
+            {
+                write_local_transfer_data(fd,mode,str_buf.pbuf);
+                break;
+            }
+            str_free(&str_buf);
+            char *error_str = strerror(errno);
+            sysutil_syslog(error_str,LOG_USER | LOG_INFO);
+            sysutil_close(fd);
+
+            return -1;
+        }
+        write_local_transfer_data(fd,mode,str_buf.pbuf);
+        //sysutil_write_loop(fd,str_buf.pbuf,recv_size);
+
+        if(session->abor_received)
+        {
+            sysutil_close(fd);
+            str_free(&str_buf);
+            return 0;
+        }
+//        if(send_size <= total_size)
+//        {
+//            already_sended += send_size;
+//            session->data_progress =  already_sended * 100 / total_size;
+//
+//            {
+//                struct mystr str_respond = INIT_MYSTR;
+//                char ptr_code[4];
+//                snprintf(ptr_code,4,"%d",session->data_progress);
+//                str_append_text(&str_respond,"data process: ");
+//                str_append_text(&str_respond,ptr_code);
+//                sysutil_syslog(ptr_code,LOG_USER | LOG_INFO);
+//            }
+//        }
+    }
+
+    str_free(&str_buf);
+    session->restart_pos = 0;
+    sysutil_close(fd);
+
+    return 1;
+}
+
+
 
 void write_data(int fd,struct mystr *strbuf,unsigned int size)
 {
@@ -160,7 +247,7 @@ int read_data(int fd,struct mystr *strbuf,unsigned int size)
 void get_internal_cmd_data(int fd, struct mystr* str_line)
 {
     int nread = 0;
-    sysutil_read(fd,str_line->pbuf,FTPD_UNIXSOCK_LEN);
+    nread = sysutil_read(fd,str_line->pbuf,FTPD_UNIXSOCK_LEN);
     str_line->num_len = nread;
 }
 
@@ -251,7 +338,6 @@ int prepare_port_pattern(struct mystr *str_arg,struct ftpd_session *session)
         str_free(&port_imaginary);
 
         struct sysutil_sockaddr *local = NULL;
-
         sockfd = sysutil_get_ipv4_sock();
         sysutil_activate_reuseaddr(sockfd);
         sysutil_activate_noblock(sockfd);
@@ -261,7 +347,6 @@ int prepare_port_pattern(struct mystr *str_arg,struct ftpd_session *session)
         sysutil_sockaddr_set_port(local,FTPD_DATAPORT);
 
         sysutil_bind(sockfd,local);
-
         sysutil_free(local);
 
         sysutil_sockaddr_alloc_ipv4(&remote);
@@ -274,15 +359,17 @@ int prepare_port_pattern(struct mystr *str_arg,struct ftpd_session *session)
     if(sysutil_connect_timeout(sockfd,remote,0) < 0)
     {
         sysutil_free(remote);
-        write_internal_cmd_respond(session->parent_fd,PCMDRESPONDPORTFAIL,NULL);
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADPROT,"PORT connection failed.\n");
+        //write_internal_cmd_respond(session->parent_fd,PCMDRESPONDPORTFAIL,NULL);
         return -1;
     }
-    sysutil_syslog("connect successed",LOG_INFO | LOG_USER);
+
     session->data_fd = sockfd;
     session->p_port_sockaddr = remote;
     session->is_pasv = 0;
 
-    write_internal_cmd_respond(session->parent_fd,PCMDRESPONDPORTOK,NULL);
+    write_cmd_respond(FTPD_CMDWRIO,FTP_PORTOK,"PORT command successful. Consider using PASV.\n");
+    //write_internal_cmd_respond(session->parent_fd,PCMDRESPONDPORTOK,NULL);
 
     return 0;
 }
@@ -351,6 +438,7 @@ int prepare_pasv_pattern(struct ftpd_session *session)
         str_free(&port_real);
         str_free(&port_imaginary);
     }
+    usleep(100000);
 
     struct sysutil_sockaddr *remote = NULL;
     //socklen_t sock_len = sizeof(*remote);
@@ -368,8 +456,9 @@ int prepare_pasv_pattern(struct ftpd_session *session)
         write_cmd_respond(FTPD_CMDWRIO,FTP_DATA_TIMEOUT,"Client connection failed.\n");
         return 0;
     }
-    sysutil_activate_noblock(client_fd);
+    //write_internal_cmd_respond(session->parent_fd,PCMDRESPONDPASV,NULL);
 
+    sysutil_activate_noblock(client_fd);
     session->data_fd = client_fd;
     session->pasv_listen_fd = sockfd;
     session->p_remote_addr = remote;
@@ -387,7 +476,8 @@ int prepare_pwd(struct ftpd_session *session)
     str_append_char(&str_buf,'\"');
     str_append_text(&str_buf," is the current directory\n");
 
-    write_internal_cmd_respond(session->parent_fd,PCMDRESPONDPWDOK,&str_buf);
+    write_cmd_respond(FTPD_CMDWRIO,FTP_PWDOK,str_buf.pbuf);
+    //write_internal_cmd_respond(session->parent_fd,PCMDRESPONDPWDOK,&str_buf);
     str_free(&str_buf);
 
     return 1;
@@ -399,17 +489,20 @@ int prepare_list(struct ftpd_session *session)
     int retval = 0;
     const char *p_pwd = NULL;
     p_pwd = sysutil_getcwd(NULL,0);
+
+    write_cmd_respond(FTPD_CMDWRIO,FTP_DATACONN,"Here comes the directory listing.\n");
+    //write_internal_cmd_respond(session->parent_fd,PCMDRESPONDLIST,NULL);
     retval = util_ls(session->data_fd,p_pwd);
-
-    sysutil_syslog("ls...",LOG_INFO| LOG_USER);
-
+    //sysutil_syslog("ls...",LOG_INFO| LOG_USER);
     if(!retval)
     {
-        write_internal_cmd_respond(session->parent_fd,PCMDRESPONDLISTFAIL,NULL);
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Directory send Failed.\n");
+        //write_internal_cmd_respond(session->parent_fd,PCMDRESPONDLISTFAIL,NULL);
         return 0;
     }
 
-    write_internal_cmd_respond(session->parent_fd,PCMDRESPONDLISTOK,NULL);
+    write_cmd_respond(FTPD_CMDWRIO,FTP_TRANSFEROK,"Directory send OK.\n");
+    //write_internal_cmd_respond(session->parent_fd,PCMDRESPONDLISTOK,NULL);
     clear_data_connection(session);
 
     return retval;
@@ -423,19 +516,23 @@ int prepare_type(struct mystr *str_arg, struct ftpd_session *session)
     if(str_equal_text(&str_buf,"A"))
     {
         session->is_ascii = 1;
-        str_free(&str_buf);
-        str_append_text(&str_buf,"apply ascii mode.\n");
-        write_internal_cmd_respond(session->parent_fd,PCMDRESPONDTYPEOK,&str_buf);
+        write_cmd_respond(FTPD_CMDWRIO,FTP_TYPEOK,"apply ascii mode.\n");
+
+//        str_free(&str_buf);
+//        str_append_text(&str_buf,"apply ascii mode.\n");
+//        write_internal_cmd_respond(session->parent_fd,PCMDRESPONDTYPEOK,&str_buf);
     }
     else if(str_equal_text(&str_buf,"I"))
     {
         session->is_ascii = 0;
-        str_free(&str_buf);
-        str_append_text(&str_buf,"apply image mode.\n");
-        write_internal_cmd_respond(session->parent_fd,PCMDRESPONDTYPEOK,&str_buf);
+        write_cmd_respond(FTPD_CMDWRIO,FTP_TYPEOK,"apply image mode.\n");
+//        str_free(&str_buf);
+//        str_append_text(&str_buf,"apply image mode.\n");
+//        write_internal_cmd_respond(session->parent_fd,PCMDRESPONDTYPEOK,&str_buf);
     }else
     {
-         write_internal_cmd_respond(session->parent_fd,PCMDRESPONDTYPEFAIL,NULL);
+         write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Only ASCII(A) and IMAGE(I) modes are supported..\n");
+         //write_internal_cmd_respond(session->parent_fd,PCMDRESPONDTYPEFAIL,NULL);
     }
 
     str_free(&str_buf);
@@ -456,7 +553,9 @@ int prepare_cdup(struct ftpd_session *session)
     {
         str_list_add(p_visited_dir_list,&str_buf);
     }
-    write_internal_cmd_respond(session->parent_fd,PCMDRESPONDCDUPOK,NULL);
+    //write_internal_cmd_respond(session->parent_fd,PCMDRESPONDCDUPOK,NULL);
+    write_cmd_respond(FTPD_CMDWRIO,FTP_CWDOK,"Directory successfully changed.\n");
+
     return 1;
 }
 
@@ -468,7 +567,9 @@ int prepare_cwd(struct mystr *str_arg,struct ftpd_session *session)
     if(str_isempty(&str_buf) || str_getlen(&str_buf) > 128 || str_all_space(&str_buf)
                     || str_contains_unprintable(&str_buf) || sysutil_chdir(str_buf.pbuf))
     {
-        write_internal_cmd_respond(session->parent_fd,PCMDRESPONDCWDFAIL,NULL);
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect path.\n");
+        //write_internal_cmd_respond(session->parent_fd,PCMDRESPONDCWDFAIL,NULL);
+        str_free(&str_buf);
         return 0;
     }
 
@@ -482,14 +583,43 @@ int prepare_cwd(struct mystr *str_arg,struct ftpd_session *session)
         str_free(&str_buf);
     }
 
-    write_internal_cmd_respond(session->parent_fd,PCMDRESPONDCWDOK,NULL);
+    write_cmd_respond(FTPD_CMDWRIO,FTP_CWDOK,"Directory successfully changed.\n");
+    //write_internal_cmd_respond(session->parent_fd,PCMDRESPONDCWDOK,NULL);
     return 1;
 }
 
 int prepare_mkd(struct mystr *str_arg,struct ftpd_session *session)
 {
+    struct mystr str_buf = INIT_MYSTR;
+    str_split_char(str_arg,&str_buf,' ');
 
-    return 0;
+    if(str_isempty(&str_buf) || str_getlen(&str_buf) > 128 || str_all_space(&str_buf)
+                    || str_contains_unprintable(&str_buf))
+    {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect dirname.\n");
+        //write_internal_cmd_respond(session->parent_fd,PCMDRESPONDCWDFAIL,NULL);
+        str_free(&str_buf);
+        return 0;
+    }
+    int retval;
+    retval = sysutil_mkdir(str_buf.pbuf,0775);
+    if(retval < 0)
+    {
+        str_free(&str_buf);
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADCMD,"Directory creation failed\n");
+        return 0;
+    }
+
+    struct mystr str_responds = INIT_MYSTR;
+    str_append_text(&str_responds,"The directory \"");
+    str_append_str(&str_responds,&str_buf);
+    str_append_text(&str_responds,"\" was successfully created.\n");
+
+    write_cmd_respond(FTPD_CMDWRIO,FTP_MKDIROK,str_responds.pbuf);
+    str_free(&str_buf);
+    str_free(&str_responds);
+
+    return 1;
 }
 
 int prepare_retr(struct mystr *str_arg,struct ftpd_session *session)
@@ -501,9 +631,11 @@ int prepare_retr(struct mystr *str_arg,struct ftpd_session *session)
     sysutil_syslog("retr",LOG_INFO | LOG_USER);
     if(!test_filename(&str_buf,&statbuf,F_OK | R_OK))
     {
-        write_internal_cmd_respond(session->parent_fd,PCMDRESPONDRETRFAIL,NULL);
+        str_free(&str_buf);
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect filename.\n");
         return 0;
     }
+
     session->transfer_size = statbuf->st_size;
     sysutil_free(statbuf);
 
@@ -526,7 +658,8 @@ int prepare_retr(struct mystr *str_arg,struct ftpd_session *session)
         str_append_text(&str_cmd,ptr_code);
         str_append_text(&str_cmd," bytes).\n");
 
-        write_internal_cmd_respond(session->parent_fd,PCMDRESPONDRETROK,&str_cmd);
+        write_cmd_respond(FTPD_CMDWRIO,FTP_DATACONN,str_cmd.pbuf);
+        //write_internal_cmd_respond(session->parent_fd,PCMDRESPONDRETROK,&str_cmd);
         str_free(&str_cmd);
     }
 
@@ -556,19 +689,22 @@ int prepare_size(struct mystr *str_arg,struct ftpd_session *session)
 
     if(!test_filename(&str_buf,&statbuf,F_OK))
     {
-        write_internal_cmd_respond(session->parent_fd,PCMDRESPONDSIZEFAIL,NULL);
+        str_free(&str_buf);
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect filename.\n");
+        //write_internal_cmd_respond(session->parent_fd,PCMDRESPONDSIZEFAIL,NULL);
         return 0;
     }
     str_free(&str_buf);
 
     {
         char ptr_code[64] = {'\0'};
-        snprintf(ptr_code,64,"%l\n",statbuf->st_size);
+        snprintf(ptr_code,64,"%d\n",statbuf->st_size);
         str_append_text(&str_buf,ptr_code);
         sysutil_free(statbuf);
     }
 
-    write_internal_cmd_respond(session->parent_fd,PCMDRESPONDSIZEOK,&str_buf);
+    write_cmd_respond(FTPD_CMDWRIO,FTP_SIZEOK,str_buf.pbuf);
+    //write_internal_cmd_respond(session->parent_fd,PCMDRESPONDSIZEOK,&str_buf);
     str_free(&str_buf);
 
     return 1;
@@ -582,7 +718,9 @@ int prepare_mdtm(struct mystr *str_arg,struct ftpd_session *session)
 
     if(!test_filename(&str_buf,&statbuf,F_OK))
     {
-        write_internal_cmd_respond(session->parent_fd,PCMDRESPONDMDTMFAIL,NULL);
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect filename.\n");
+        str_free(&str_buf);
+        //write_internal_cmd_respond(session->parent_fd,PCMDRESPONDMDTMFAIL,NULL);
         return 0;
     }
     str_free(&str_buf);
@@ -594,15 +732,92 @@ int prepare_mdtm(struct mystr *str_arg,struct ftpd_session *session)
         str_append_text(&str_buf,time);
     }
 
-    write_internal_cmd_respond(session->parent_fd,PCMDRESPONDMDTMOK,&str_buf);
+    write_cmd_respond(FTPD_CMDWRIO,FTP_MDTMOK,str_buf.pbuf);
+    //write_internal_cmd_respond(session->parent_fd,PCMDRESPONDMDTMOK,&str_buf);
     str_free(&str_buf);
 
     return 1;
 }
 
+int prepare_noop(struct ftpd_session *session)
+{
+     write_cmd_respond(FTPD_CMDWRIO,FTP_NOOPOK,"Server is alive.\n");
+}
+
+
 int prepare_stor(struct mystr *str_arg,struct ftpd_session *session)
 {
-    return 0;
+    struct mystr str_buf = INIT_MYSTR;
+    str_split_char(str_arg,&str_buf,' ');
+
+    if(str_isempty(&str_buf) || str_getlen(&str_buf) > 128 || str_all_space(&str_buf)
+                                                || str_contains_unprintable(&str_buf))
+    {
+        str_free(&str_buf);
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect filename.\n");
+        return 0;
+    }
+
+    int recvfd = sysutil_create_or_open_file(str_buf.pbuf,0664);
+    if(recvfd < 0)
+    {
+        str_free(&str_buf);
+        clear_data_connection(session);
+        write_cmd_respond(FTPD_CMDWRIO,FTP_FILEFAIL,"File create error\n");
+        return 0;
+    }
+
+    int retval = 0;
+    retval = read_file_data(session,recvfd,session->is_ascii);
+    if(retval < 0) {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_FILEFAIL,"File receiving failed.\n");
+    }else if(retval > 0) {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_TRANSFEROK,"Transfer complete.\n");
+    }else {
+        //write_cmd_respond(FTPD_CMDWRIO,FTP_FILEFAIL,"File receiving failed.\n");
+    }
+
+    str_free(&str_buf);
+    clear_data_connection(session);
+
+    return 1;
+}
+
+int prepare_stou(struct mystr *str_arg,struct ftpd_session *session)
+{
+    struct mystr str_buf = INIT_MYSTR;
+    str_split_char(str_arg,&str_buf,' ');
+
+    if(str_isempty(&str_buf) || str_getlen(&str_buf) > 128 || str_all_space(&str_buf)
+                                                || str_contains_unprintable(&str_buf))
+    {
+        str_free(&str_buf);
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect filename.\n");
+        return 0;
+    }
+
+    int recvfd = sysutil_create_file_exclusive(str_buf.pbuf);
+    if(recvfd < 0)
+    {
+        str_free(&str_buf);
+        clear_data_connection(session);
+        write_cmd_respond(FTPD_CMDWRIO,FTP_FILEFAIL,"File already exist\n");
+        return 0;
+    }
+
+    int retval = 0;
+    retval = read_file_data(session,recvfd,session->is_ascii);
+    if(retval < 0) {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_FILEFAIL,"File already exist or File receiving failed.\n");
+    }else if(retval > 0) {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_TRANSFEROK,"Transfer complete.\n");
+    }else {
+        //write_cmd_respond(FTPD_CMDWRIO,FTP_FILEFAIL,"File receiving failed.\n");
+    }
+
+    str_free(&str_buf);
+    clear_data_connection(session);
+    return 1;
 }
 
 int prepare_rest(struct mystr *str_arg,struct ftpd_session *session)
@@ -612,11 +827,86 @@ int prepare_rest(struct mystr *str_arg,struct ftpd_session *session)
 
 int prepare_rmd(struct mystr *str_arg,struct ftpd_session *session)
 {
-    return 0;
+    struct mystr str_buf = INIT_MYSTR;
+    str_split_char(str_arg,&str_buf,' ');
+    struct sysutil_statbuf *statbuf = NULL;
+
+    if(!test_filename(&str_buf,&statbuf,F_OK))
+    {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect dirname.\n");
+        str_free(&str_buf);
+        //write_internal_cmd_respond(session->parent_fd,PCMDRESPONDMDTMFAIL,NULL);
+        return 0;
+    }
+
+//    int num = 0;
+//    struct sysutil_dir *Dir;
+//    struct dirent *p_dir;
+//
+//    Dir = sysutil_opendir(str_buf.pbuf);
+//
+//    while(p_dir = sysutil_next_dirent(Dir))
+//    {
+//        if(!str_strcmp(p_dir->d_name,".") || !str_strcmp(p_dir->d_name,".."))
+//            continue;
+//        num++;
+//    }
+//    sysutil_closedir(Dir);
+//
+//    if(num)
+//    {
+//        str_free(&str_buf);
+//        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"directory not empty\n");
+//        return 0;
+//    }
+
+    int retval;
+    retval = sysutil_rmdir(str_buf.pbuf);
+    if(retval < 0)
+    {
+        str_free(&str_buf);
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADCMD,"Directory delete failed\n");
+        return 0;
+    }
+
+    struct mystr str_responds = INIT_MYSTR;
+    str_append_text(&str_responds,"The directory \"");
+    str_append_str(&str_responds,&str_buf);
+    str_append_text(&str_responds,"\" was successfully deleted.\n");
+
+    write_cmd_respond(FTPD_CMDWRIO,FTP_RMDIROK,str_responds.pbuf);
+    str_free(&str_buf);
+    str_free(&str_responds);
+
+    return 1;
 }
 
 int prepare_dele(struct mystr *str_arg,struct ftpd_session *session)
 {
+    struct mystr str_buf = INIT_MYSTR;
+    str_split_char(str_arg,&str_buf,' ');
+
+
+    if(str_isempty(&str_buf) || str_getlen(&str_buf) > 128 || str_all_space(&str_buf)
+              || str_contains_unprintable(&str_buf) || access(str_buf.pbuf,F_OK))
+    {
+        str_free(&str_buf);
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect filename.\n");
+        return 0;
+    }
+
+    int retval = 0;
+    retval = remove(str_buf.pbuf);
+    if(retval < 0)
+    {
+        str_free(&str_buf);
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADCMD,"Try deleted file failed.\n");
+        return 0;
+    }
+
+    str_free(&str_buf);
+    write_cmd_respond(FTPD_CMDWRIO,FTP_DELEOK,"successfully delete.\n");
+
     return 0;
 }
 
@@ -660,8 +950,11 @@ void deal_parent_respond(struct ftpd_session *session)
     case PCMDRESPONDPORTFAIL:
         write_cmd_respond(FTPD_CMDWRIO,FTP_BADPROT,"PORT connection failed.\n");
         break;
+    case PCMDRESPONDPASV:
+        break;
     case PCMDRESPONDPASVOK:
         write_cmd_respond(FTPD_CMDWRIO,FTP_PASVOK,str_responds.pbuf);
+        deal_parent_respond(session);
         break;
     case PCMDRESPONDPASVFAIL:
         write_cmd_respond(FTPD_CMDWRIO,FTP_DATA_TIMEOUT,"Client connection failed.\n");
@@ -698,6 +991,10 @@ void deal_parent_respond(struct ftpd_session *session)
         break;
     case PCMDRESPONDCDUPOK:
         write_cmd_respond(FTPD_CMDWRIO,FTP_CWDOK,"Directory successfully changed.\n");
+        break;
+    case PCMDRESPONDLIST:
+        write_cmd_respond(FTPD_CMDWRIO,FTP_DATACONN,"Here comes the directory listing.\n");
+        deal_parent_respond(session);
         break;
     case PCMDRESPONDLISTOK:
         write_cmd_respond(FTPD_CMDWRIO,FTP_TRANSFEROK,"Directory send OK.\n");

@@ -167,16 +167,12 @@ int sysutil_mkdir(const char* p_dirname, const unsigned int mode)
 {
     int retval;
     retval = mkdir(p_dirname,mode);
-    if(retval < 0)
-        die("mkdir");
     return retval;
 }
 int sysutil_rmdir(const char* p_dirname)
 {
     int retval;
     retval = rmdir(p_dirname);
-    if(retval < 0)
-        die("rmdir");
     return retval;
 }
 int sysutil_chdir(const char* p_dirname)
@@ -239,7 +235,7 @@ int sysutil_open_file(const char* p_filename,
 /* Fails if file already exists */
 int sysutil_create_file_exclusive(const char* p_filename)
 {
-    return open(p_filename,O_CREAT|O_EXCL|O_APPEND|O_WRONLY,0666);
+    return open(p_filename,O_CREAT|O_EXCL|O_APPEND|O_WRONLY);
 }
 /* Creates file or appends if already exists */
 int sysutil_create_or_open_file_append(const char* p_filename,
@@ -247,11 +243,13 @@ int sysutil_create_or_open_file_append(const char* p_filename,
 {
     return open(p_filename,O_CREAT|O_APPEND|O_WRONLY|O_NONBLOCK,mode);
 }
+
 /* Creates or appends */
 int sysutil_create_or_open_file(const char* p_filename, unsigned int mode)
 {
-    return open(p_filename,O_CREAT|O_RDWR|O_NONBLOCK,mode);
+    return open(p_filename,O_CREAT|O_RDWR|O_TRUNC|O_NONBLOCK,mode);
 }
+
 void sysutil_dupfd2(int old_fd, int new_fd)
 {
     int retval;
@@ -684,10 +682,14 @@ unsigned int sysutil_strlen(const char* p_text)
 }
 char* sysutil_strdup(const char* p_str)
 {
+    if(p_str == NULL) return NULL;
+
     return strdup(p_str);
 }
 void sysutil_memclr(void* p_dest, unsigned int size)
 {
+    if(!size || !p_dest) return;
+
     memset(p_dest,'\0',size);
 }
 void sysutil_memcpy(void* p_dest, const void* p_src,

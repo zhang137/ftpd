@@ -50,6 +50,7 @@ void str_upper(struct mystr* p_str);
 void str_rpad(struct mystr* p_str, const unsigned int min_width);
 void str_lpad(struct mystr* p_str, const unsigned int min_width);
 void str_replace_char(struct mystr* p_str, char from, char to);
+void str_replace_char_index(struct mystr* p_str, int index, char to_char);
 void str_replace_text(struct mystr* p_str, const char* p_from,
                       const char* p_to);
 

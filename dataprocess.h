@@ -5,11 +5,13 @@
 #include "session.h"
 #include "str.h"
 
-int get_netdata(struct mystr *str_arg,char term);
-int read_data(int fd,struct mystr *strbuf,unsigned int size);
+int  get_netdata(struct mystr *str_arg,char term);
+int  read_data(int fd,struct mystr *strbuf,unsigned int size);
 void write_data(int fd,struct mystr *strbuf,unsigned int size);
-void write_data_respond(int fd, int data_mode,const char *resp_str);
+void write_remote_transfer_data(int fd, int data_mode,const char *resp_str);
+void write_local_transfer_data(int fd, int data_mode,const char *resp_str);
 void write_cmd_respond(int fd, unsigned resp_code,const char *resp_str);
+int read_file_data(struct ftpd_session *session, int fd,int mode);
 int write_file_data(struct ftpd_session *session, const char *file_name);
 int message_recv_peek(int fd,struct mystr *p_str,unsigned int datalen);
 void get_internal_cmd_data(int fd, struct mystr* str_line);
@@ -28,11 +30,13 @@ int prepare_cdup(struct ftpd_session *session);
 int prepare_mkd(struct mystr *str_arg,struct ftpd_session *session);
 int prepare_retr(struct mystr *str_arg,struct ftpd_session *session);
 int prepare_stor(struct mystr *str_arg,struct ftpd_session *session);
+int prepare_stou(struct mystr *str_arg,struct ftpd_session *session);
 int prepare_rest(struct mystr *str_arg,struct ftpd_session *session);
 int prepare_list(struct ftpd_session *session);
 int prepare_rmd(struct mystr *str_arg,struct ftpd_session *session);
 int prepare_dele(struct mystr *str_arg,struct ftpd_session *session);
 int prepare_size(struct mystr *str_arg,struct ftpd_session *session);
 int prepare_mdtm(struct mystr *str_arg,struct ftpd_session *session);
+int prepare_noop(struct ftpd_session *session);
 
 #endif // DATAPROCESS_H_INCLUDED
