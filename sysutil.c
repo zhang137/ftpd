@@ -568,7 +568,6 @@ void* sysutil_malloc(unsigned int size)
         die("malloc error");
     }
 
-
     return ptr;
 }
 

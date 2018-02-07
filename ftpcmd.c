@@ -28,6 +28,7 @@ void handle_user(struct ftpd_session *session, struct mystr *str_arg)
 
 void handle_pass(struct ftpd_session *session, struct mystr *str_arg)
 {
+    sysutil_syslog("login",LOG_USER | LOG_INFO);
 
     if(str_isempty(&session->user_str))
     {
@@ -47,6 +48,10 @@ void handle_pass(struct ftpd_session *session, struct mystr *str_arg)
     str_append_str(&str_buf,&session->user_str);
     str_append_char(&str_buf,' ');
     str_append_str(&str_buf,str_arg);
+
+
+    sysutil_syslog("auth login",LOG_USER | LOG_INFO);
+    sysutil_syslog(str_buf.pbuf,LOG_USER | LOG_INFO);
 
     write_internal_cmd_request(session->child_fd,&str_buf);
     str_free(&str_buf);
