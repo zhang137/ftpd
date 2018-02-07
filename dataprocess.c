@@ -101,17 +101,16 @@ void write_local_transfer_data(int fd, int data_mode,const char *resp_str)
     struct mystr str_respond = INIT_MYSTR;
     str_alloc_text(&str_respond,resp_str);
 
-    if(data_mode)
-    {
-        char term_char;
-
-        if((term_char = str_get_char_at(&str_respond,str_respond.num_len - 2)) == '\r')
-        {
-            str_replace_char_index(&str_respond,str_respond.num_len - 2,'\n');
-            str_replace_char_index(&str_respond,str_respond.num_len - 1,'\0');
-        }
-
-    }
+//    if(data_mode)
+//    {
+//        char term_char;
+//        if((term_char = str_get_char_at(&str_respond,str_respond.num_len - 2)) == '\r')
+//        {
+//            str_replace_char_index(&str_respond,str_respond.num_len - 2,'\n');
+//            str_replace_char_index(&str_respond,str_respond.num_len - 1,'\0');
+//        }
+//
+//    }
     write_data(fd,&str_respond,str_respond.num_len);
     str_free(&str_respond);
 }
@@ -180,16 +179,14 @@ int read_file_data(struct ftpd_session *session, int fd,int mode)
     while(1)
     {
         str_empty(&str_buf);
-        recv_size = sysutil_read_loop(session->data_fd,str_buf.pbuf,recv_buf_size);
+        recv_size = sysutil_read(session->data_fd,str_buf.pbuf,recv_buf_size);
         if(recv_size <= 0)
         {
-            if(errno == EINTR)
-                continue;
             if(!recv_size)
             {
-                write_local_transfer_data(fd,mode,str_buf.pbuf);
                 break;
             }
+
             str_free(&str_buf);
             char *error_str = strerror(errno);
             sysutil_syslog(error_str,LOG_USER | LOG_INFO);
@@ -197,7 +194,7 @@ int read_file_data(struct ftpd_session *session, int fd,int mode)
 
             return -1;
         }
-        write_local_transfer_data(fd,mode,str_buf.pbuf);
+        sysutil_write_loop(fd,str_buf.pbuf,recv_size);
         //sysutil_write_loop(fd,str_buf.pbuf,recv_size);
 
         if(session->abor_received)
@@ -241,7 +238,7 @@ void write_data(int fd,struct mystr *strbuf,unsigned int size)
 
 int read_data(int fd,struct mystr *strbuf,unsigned int size)
 {
-    return sysutil_read_loop(fd,strbuf->pbuf,size);;
+    return sysutil_read_loop(fd,strbuf->pbuf,size);
 }
 
 void get_internal_cmd_data(int fd, struct mystr* str_line)
@@ -754,6 +751,7 @@ int prepare_stor(struct mystr *str_arg,struct ftpd_session *session)
                                                 || str_contains_unprintable(&str_buf))
     {
         str_free(&str_buf);
+        clear_data_connection(session);
         write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect filename.\n");
         return 0;
     }

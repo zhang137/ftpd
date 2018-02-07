@@ -74,7 +74,7 @@ const char* str_strdup(const struct mystr* p_str)
 }
 void str_empty(struct mystr* p_str)
 {
-    sysutil_memclr(p_str->pbuf,p_str->num_len);
+    sysutil_memclr(p_str->pbuf,p_str->alloc_bytes);
     p_str->num_len = 0;
 }
 

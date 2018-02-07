@@ -325,7 +325,7 @@ int sysutil_read(const int fd, void* p_buf, const unsigned int size)
     {
         if(errno == EINTR || errno == EWOULDBLOCK)
             continue;
-        die("read");
+        return -1;
     }
     return nread;
 }
@@ -350,8 +350,8 @@ int sysutil_read_loop(const int fd, void* p_buf, unsigned int size)
     while(nread < size)
     {
         ntmp = sysutil_read(fd,p_buf+nread,ntotal);
-        if(ntmp == 0) {
-            return 0;
+        if(ntmp <= 0) {
+            return ntmp;
         }
         nread += ntmp;
         ntotal -= ntmp;
