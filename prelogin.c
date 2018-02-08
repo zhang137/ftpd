@@ -131,6 +131,9 @@ void wait_data_connection(struct ftpd_session *session)
         if(str_equal_text(&str_cmd,"PWD")) {
             handle_pwd(session);
         }
+        else if(str_equal_text(&str_cmd,"ABOR")) {
+            handle_abor(session);
+        }
         else if(str_equal_text(&str_cmd,"SYST")) {
             handle_syst(session);
         }

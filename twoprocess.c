@@ -183,6 +183,9 @@ int parse_cmd(struct ftpd_session *session, struct mystr *p_str)
     case PCMDREQUESTNOOP:
         prepare_noop(session);
         break;
+    case PCMDREQUESTABOR:
+        prepare_abor(session);
+        break;
     }
 
     str_empty(p_str);

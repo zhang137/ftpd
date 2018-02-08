@@ -115,15 +115,10 @@ void write_local_transfer_data(int fd, int data_mode,const char *resp_str)
     str_free(&str_respond);
 }
 
-int write_file_data(struct ftpd_session *session, const char *file_name)
+int write_file_data(struct ftpd_session *session, int sendfd)
 {
-    int sendfd;
     int send_buf_size = FTPD_DATA_LEN;
     filesize_t total_size = session->transfer_size,already_sended = 0,send_size = 0;
-
-    sendfd = sysutil_open_file(file_name,kVSFSysUtilOpenReadOnly);
-    if(sendfd < 0)
-        return -1;
 
     if(total_size < send_buf_size)
         send_buf_size = total_size;
@@ -143,6 +138,7 @@ int write_file_data(struct ftpd_session *session, const char *file_name)
         }
         if(session->abor_received)
         {
+            session->abor_received = 0;
             sysutil_close(sendfd);
             return 0;
         }
@@ -199,6 +195,7 @@ int read_file_data(struct ftpd_session *session, int fd,int mode)
 
         if(session->abor_received)
         {
+            session->abor_received = 0;
             sysutil_close(fd);
             str_free(&str_buf);
             return 0;
@@ -290,6 +287,7 @@ void recv_portmod_socket(struct ftpd_session *session)
 void clear_data_connection(struct ftpd_session *session)
 {
     sysutil_shutdown_failok(session->data_fd);
+    session->data_fd = -1;
     if(session->is_pasv)
     {
         sysutil_close(session->pasv_listen_fd);
@@ -299,6 +297,7 @@ void clear_data_connection(struct ftpd_session *session)
     {
         sysutil_sockaddr_clear(&session->p_port_sockaddr);
     }
+
 }
 
 int test_filename(struct mystr *str_arg,struct sysutil_statbuf **statbuf,int access_type)
@@ -629,8 +628,16 @@ int prepare_retr(struct mystr *str_arg,struct ftpd_session *session)
     if(!test_filename(&str_buf,&statbuf,F_OK | R_OK))
     {
         str_free(&str_buf);
-        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect filename.\n");
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADSENDFILE,"Incorrect filename.\n");
         return 0;
+    }
+
+    int sendfd = sysutil_open_file(str_buf.pbuf,kVSFSysUtilOpenReadOnly);
+    if(sendfd < 0)
+    {
+        sysutil_free(statbuf);
+        str_free(&str_buf);
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADSENDFILE,"Incorrect filename.\n");
     }
 
     session->transfer_size = statbuf->st_size;
@@ -661,9 +668,9 @@ int prepare_retr(struct mystr *str_arg,struct ftpd_session *session)
     }
 
     int retval = 0;
-    retval = write_file_data(session, str_buf.pbuf);
+    retval = write_file_data(session, sendfd);
     if(retval < 0)
-        write_cmd_respond(FTPD_CMDWRIO,FTP_FILEFAIL,"File sending failed.\n");
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADSENDNET,"Failure writing network stream.\n");
     else if(retval > 0)
     {
         write_cmd_respond(FTPD_CMDWRIO,FTP_TRANSFEROK,"Transfer complete.\n");
@@ -907,6 +914,22 @@ int prepare_dele(struct mystr *str_arg,struct ftpd_session *session)
 
     return 0;
 }
+
+
+int prepare_abor(struct ftpd_session *session)
+{
+
+    session->abor_received = 1;
+    if(session->data_fd == -1 && session->pasv_listen_fd == -1)
+    {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_ABOR_NOCONN,"Abor failed, no network connection.\n");
+    }else {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_ABOROK,"Abor success.\n");
+    }
+
+    return 0;
+}
+
 
 
 void deal_parent_respond(struct ftpd_session *session)

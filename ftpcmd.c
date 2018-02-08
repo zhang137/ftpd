@@ -64,9 +64,14 @@ void handle_pass(struct ftpd_session *session, struct mystr *str_arg)
 
 }
 
-void handle_abot()
+void handle_abor(struct ftpd_session *session)
 {
+    struct mystr str_buf = INIT_MYSTR;
 
+    str_append_char(&str_buf,PCMDREQUESTABOR);
+
+    write_internal_cmd_request(session->child_fd,&str_buf);
+    str_free(&str_buf);
 }
 
 void handle_cdup(struct ftpd_session *session)

@@ -19,7 +19,7 @@ void handle_pass(struct ftpd_session *session, struct mystr *str_arg);
 /*
 * 服务器中止上一次FTP服务命令及所有相关的数据传输。
 */
-void handle_abot();
+void handle_abor(struct ftpd_session *session);
 /*
 *
 */
