@@ -841,8 +841,56 @@ int prepare_stou(struct mystr *str_arg,struct ftpd_session *session)
     return 1;
 }
 
+
+int prepare_appe(struct mystr *str_arg,struct ftpd_session *session)
+{
+    struct mystr str_buf = INIT_MYSTR;
+    str_split_char(str_arg,&str_buf,' ');
+
+    if(str_isempty(&str_buf) || str_getlen(&str_buf) > 128 || str_all_space(&str_buf)
+                                                || str_contains_unprintable(&str_buf))
+    {
+        str_free(&str_buf);
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect filename.\n");
+        return 0;
+    }
+
+    int recvfd = sysutil_create_or_open_file_append(str_buf.pbuf,0664);
+    if(recvfd < 0)
+    {
+        str_free(&str_buf);
+        clear_data_connection(session);
+        write_cmd_respond(FTPD_CMDWRIO,FTP_FILEFAIL,"File already exist\n");
+        return 0;
+    }
+    write_cmd_respond(FTPD_CMDWRIO,FTP_DATACONN,"Ok to send data.\n");
+
+    int retval = 0;
+    retval = read_file_data(session,recvfd,session->is_ascii);
+    if(retval < 0) {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADSENDCONN,"Transfer connection error.\n");
+    }else if(retval > 0) {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_TRANSFEROK,"Transfer complete.\n");
+    }else {
+        //write_cmd_respond(FTPD_CMDWRIO,FTP_FILEFAIL,"File receiving failed.\n");
+    }
+
+    str_free(&str_buf);
+    clear_data_connection(session);
+    return 1;
+}
+
 int prepare_rest(struct mystr *str_arg,struct ftpd_session *session)
 {
+    struct mystr str_buf = INIT_MYSTR;
+    str_split_char(str_arg,&str_buf,' ');
+    struct sysutil_statbuf *statbuf = NULL;
+
+    session->restart_pos = sysutil_atoi(str_buf.pbuf);
+
+    write_cmd_respond(FTPD_CMDWRIO,FTP_RESTOK,"File rest set successfully\n");
+    str_free(&str_buf);
+
     return 0;
 }
 

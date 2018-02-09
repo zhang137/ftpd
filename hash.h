@@ -6,7 +6,8 @@
 
 struct hash_entry
 {
-    unsigned int hash_ip;
+    unsigned int link_num;
+    unsigned int login_ip;
     struct hash_entry *next;
 };
 

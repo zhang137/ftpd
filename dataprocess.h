@@ -31,6 +31,7 @@ int prepare_mkd(struct mystr *str_arg,struct ftpd_session *session);
 int prepare_retr(struct mystr *str_arg,struct ftpd_session *session);
 int prepare_stor(struct mystr *str_arg,struct ftpd_session *session);
 int prepare_stou(struct mystr *str_arg,struct ftpd_session *session);
+int prepare_appe(struct mystr *str_arg,struct ftpd_session *session);
 int prepare_rest(struct mystr *str_arg,struct ftpd_session *session);
 int prepare_list(struct ftpd_session *session);
 int prepare_rmd(struct mystr *str_arg,struct ftpd_session *session);

@@ -168,6 +168,9 @@ int parse_cmd(struct ftpd_session *session, struct mystr *p_str)
     case PCMDREQUESTSTOU:
         prepare_stou(p_str,session);
         break;
+    case PCMDREQUESTAPPE:
+        prepare_appe(p_str,session);
+        break;
     case PCMDREQUESTRMD:
         prepare_rmd(p_str,session);
         break;

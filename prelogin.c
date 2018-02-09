@@ -161,6 +161,9 @@ void wait_data_connection(struct ftpd_session *session)
         else if(str_equal_text(&str_cmd,"REST")) {
             handle_rest(session,&str_arg);
         }
+        else if(str_equal_text(&str_cmd,"APPE")) {
+            handle_appe(session,&str_arg);
+        }
         else if(str_equal_text(&str_cmd,"SIZE")) {
             handle_size(session,&str_arg);
         }

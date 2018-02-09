@@ -1,0 +1,296 @@
+# depslib dependency file v1.0
+1517845004 source:/home/zyy/project/ftpd/commoncode.c
+	"commoncode.h"
+	"commoncode.h"
+
+1518091588 /home/zyy/project/ftpd/commoncode.h
+
+1517845004 source:/home/zyy/project/ftpd/controlprocess.c
+	"controlprocess.h"
+	"controlprocess.h"
+
+1517845004 /home/zyy/project/ftpd/controlprocess.h
+
+1518186808 source:/home/zyy/project/ftpd/dataprocess.c
+	<stdio.h>
+	<stdlib.h>
+	<unistd.h>
+	<errno.h>
+	<syslog.h>
+	<time.h>
+	<string.h>
+	<sys/sendfile.h>
+	"sysutil.h"
+	"dataprocess.h"
+	"commoncode.h"
+	"ftpcode.h"
+	<stdio.h>
+	<stdlib.h>
+	<unistd.h>
+	<errno.h>
+	<syslog.h>
+	<time.h>
+	<string.h>
+	<sys/sendfile.h>
+	"sysutil.h"
+	"dataprocess.h"
+	"commoncode.h"
+	"ftpcode.h"
+
+1518182349 /home/zyy/project/ftpd/sysutil.h
+	<netinet/in.h>
+	<sys/stat.h>
+	<dirent.h>
+	<pwd.h>
+	<grp.h>
+	"session.h"
+	"filesize.h"
+	<netinet/in.h>
+	<sys/stat.h>
+	<dirent.h>
+	<pwd.h>
+	<grp.h>
+	"session.h"
+	"filesize.h"
+
+1517845004 /home/zyy/project/ftpd/session.h
+	"filesize.h"
+	"sysutil.h"
+	"strlist.h"
+	"filesize.h"
+	"sysutil.h"
+	"strlist.h"
+
+1517845004 /home/zyy/project/ftpd/filesize.h
+
+1517845004 /home/zyy/project/ftpd/strlist.h
+	<netinet/in.h>
+	"str.h"
+	<netinet/in.h>
+	"str.h"
+
+1518005389 /home/zyy/project/ftpd/str.h
+	"filesize.h"
+	"filesize.h"
+
+1518186953 /home/zyy/project/ftpd/dataprocess.h
+	"commoncode.h"
+	"session.h"
+	"str.h"
+	"commoncode.h"
+	"session.h"
+	"str.h"
+
+1517845004 /home/zyy/project/ftpd/ftpcode.h
+
+1518091589 source:/home/zyy/project/ftpd/ftpcmd.c
+	<stdio.h>
+	<stdlib.h>
+	<unistd.h>
+	<limits.h>
+	<syslog.h>
+	"ftpcmd.h"
+	"ftpcode.h"
+	"commoncode.h"
+	"dataprocess.h"
+	<stdio.h>
+	<stdlib.h>
+	<unistd.h>
+	<limits.h>
+	<syslog.h>
+	"ftpcmd.h"
+	"ftpcode.h"
+	"commoncode.h"
+	"dataprocess.h"
+
+1518091589 /home/zyy/project/ftpd/ftpcmd.h
+	"session.h"
+	"str.h"
+	"session.h"
+	"str.h"
+
+1517845004 source:/home/zyy/project/ftpd/hash.c
+	"hash.h"
+	"hash.h"
+
+1518182349 /home/zyy/project/ftpd/hash.h
+
+1518005389 source:/home/zyy/project/ftpd/ls.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<time.h>
+	<sys/types.h>
+	<syslog.h>
+	<fcntl.h>
+	<unistd.h>
+	"sysutil.h"
+	"dataprocess.h"
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<time.h>
+	<sys/types.h>
+	<syslog.h>
+	<fcntl.h>
+	<unistd.h>
+	"sysutil.h"
+	"dataprocess.h"
+
+1518182349 source:/home/zyy/project/ftpd/main.c
+	<stdio.h>
+	<syslog.h>
+	"session.h"
+	"sysutil.h"
+	"strlist.h"
+	"twoprocess.h"
+	<stdio.h>
+	<syslog.h>
+	"session.h"
+	"sysutil.h"
+	"strlist.h"
+	"twoprocess.h"
+
+1517845004 /home/zyy/project/ftpd/twoprocess.h
+	"session.h"
+	"session.h"
+
+1518187198 source:/home/zyy/project/ftpd/prelogin.c
+	<stdio.h>
+	<stdlib.h>
+	<unistd.h>
+	<syslog.h>
+	<sys/prctl.h>
+	<shadow.h>
+	"sysutil.h"
+	"prelogin.h"
+	"ftpcode.h"
+	"commoncode.h"
+	"ftpcmd.h"
+
+1517845004 /home/zyy/project/ftpd/prelogin.h
+	"str.h"
+	"session.h"
+	"str.h"
+	"session.h"
+
+1518013664 source:/home/zyy/project/ftpd/str.c
+	<stdio.h>
+	"str.h"
+	"sysutil.h"
+	<syslog.h>
+	<stdio.h>
+	"str.h"
+	"sysutil.h"
+	<syslog.h>
+
+1517845004 source:/home/zyy/project/ftpd/strlist.c
+	<stdlib.h>
+	"strlist.h"
+	<stdlib.h>
+	"strlist.h"
+
+1518182349 source:/home/zyy/project/ftpd/sysutil.c
+	<stdio.h>
+	<stdlib.h>
+	<sys/types.h>
+	<arpa/inet.h>
+	<sys/socket.h>
+	<sys/signal.h>
+	<sys/select.h>
+	<sys/resource.h>
+	<netinet/tcp.h>
+	<netinet/ip.h>
+	<netinet/ip6.h>
+	<ifaddrs.h>
+	<sys/utsname.h>
+	<sys/wait.h>
+	<sys/time.h>
+	<utime.h>
+	<sys/un.h>
+	<syslog.h>
+	<string.h>
+	<limits.h>
+	<signal.h>
+	<fcntl.h>
+	<unistd.h>
+	<netdb.h>
+	<time.h>
+	<ctype.h>
+	<errno.h>
+	<sys/prctl.h>
+	<sys/capability.h>
+	"sysutil.h"
+	"str.h"
+	<stdio.h>
+	<stdlib.h>
+	<sys/types.h>
+	<arpa/inet.h>
+	<sys/socket.h>
+	<sys/signal.h>
+	<sys/select.h>
+	<sys/resource.h>
+	<netinet/tcp.h>
+	<netinet/ip.h>
+	<netinet/ip6.h>
+	<ifaddrs.h>
+	<sys/utsname.h>
+	<sys/wait.h>
+	<sys/time.h>
+	<utime.h>
+	<sys/un.h>
+	<syslog.h>
+	<string.h>
+	<limits.h>
+	<signal.h>
+	<fcntl.h>
+	<unistd.h>
+	<netdb.h>
+	<time.h>
+	<ctype.h>
+	<errno.h>
+	<sys/prctl.h>
+	<sys/capability.h>
+	"sysutil.h"
+	"str.h"
+
+1518186977 source:/home/zyy/project/ftpd/twoprocess.c
+	<stdio.h>
+	<stdlib.h>
+	<unistd.h>
+	<errno.h>
+	<syslog.h>
+	"sysutil.h"
+	"prelogin.h"
+	"twoprocess.h"
+	"dataprocess.h"
+	"ftpcode.h"
+	"commoncode.h"
+	<stdio.h>
+	<stdlib.h>
+	<unistd.h>
+	<errno.h>
+	<syslog.h>
+	"sysutil.h"
+	"prelogin.h"
+	"twoprocess.h"
+	"dataprocess.h"
+	"ftpcode.h"
+	"commoncode.h"
+
+1517920172 source:/home/zyy/project/ftpd/util.c
+	<stdio.h>
+	<syslog.h>
+	"sysutil.h"
+	"util.h"
+	"commoncode.h"
+	<stdio.h>
+	<syslog.h>
+	"sysutil.h"
+	"util.h"
+	"commoncode.h"
+
+1517845004 /home/zyy/project/ftpd/util.h
+	"session.h"
+	"session.h"
+
