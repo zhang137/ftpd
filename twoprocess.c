@@ -34,7 +34,7 @@ void twoprogress(struct ftpd_session *session)
     close_parent_context(session);
     del_privilege();
     init_connection(session);
-    //
+
 
 }
 

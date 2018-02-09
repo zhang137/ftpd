@@ -19,7 +19,7 @@ int main()
     session.idle_timeout = 20;
     session.data_timeout = 30;
     session.is_anonymous = 0;
-
+    session.bw_rate_max = 1000;
 
     standalone_socket(&session);
 

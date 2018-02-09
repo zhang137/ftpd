@@ -1663,7 +1663,18 @@ const char *sysutil_localnet_ipaddress(struct ftpd_session *session)
 
 }
 
-
+unsigned int sysutil_gettcprtt(int sockfd)
+{
+    int ret = 0;
+    struct tcp_info info;
+    socklen_t tcp_info_length = sizeof(info);
+    ret = getsockopt(sockfd, SOL_TCP, TCP_INFO, &info, &tcp_info_length);
+    if(ret < 0)
+    {
+        return 0;
+    }
+    return info.tcpi_rtt;
+}
 
 
 

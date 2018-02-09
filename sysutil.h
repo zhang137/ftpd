@@ -381,5 +381,6 @@ void sysutil_recvfd(int fd, int *recvfd);
 void sysutil_prctl(int option);
 void sysutil_capnetbind();
 const char * sysutil_localnet_ipaddress(struct ftpd_session *session);
+unsigned int  sysutil_gettcprtt(int sockfd);
 
 #endif // SYSUTIL_H_INCLUDED

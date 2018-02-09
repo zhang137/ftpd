@@ -119,14 +119,21 @@ int write_file_data(struct ftpd_session *session, int sendfd)
 {
     int send_buf_size = FTPD_DATA_LEN;
     filesize_t total_size = session->transfer_size,already_sended = 0,send_size = 0;
+    int data_rate = session->bw_rate_max * 1000;
+    unsigned int rtt = 0;
 
     if(total_size < send_buf_size)
         send_buf_size = total_size;
 
+    session->bw_send_start_sec = sysutil_get_time_sec();
+    session->bw_send_start_usec = sysutil_get_time_usec();
+
+
+
     sysutil_syslog("file sending .....",LOG_USER | LOG_INFO);
     while(send_size < total_size)
     {
-        send_size = sendfile(session->data_fd,sendfd,&session->restart_pos,total_size);
+        send_size = sendfile(session->data_fd,sendfd,&session->restart_pos,send_buf_size);
         if(send_size < 0)
         {
             if(errno == EINTR)
@@ -142,6 +149,15 @@ int write_file_data(struct ftpd_session *session, int sendfd)
             sysutil_close(sendfd);
             return 0;
         }
+
+        if(!(rtt = sysutil_gettcprtt(session->data_fd)))
+        {
+            char *error_str = strerror(errno);
+            sysutil_syslog(error_str,LOG_USER | LOG_INFO);
+            sysutil_close(sendfd);
+            return -1;
+        }
+        send_buf_size = data_rate * 1000 / rtt;
 //        if(send_size <= total_size)
 //        {
 //            already_sended += send_size;
