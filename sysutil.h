@@ -61,6 +61,10 @@ typedef void (*context_io_t)(int, int, void*);
 
 enum EVSFSysUtilError sysutil_get_error(void);
 
+void sysutil_die_follow_parent();
+void headle_exit(int sig);
+
+
 int  sysutil_retval_is_error(int retval);
 void sysutil_install_null_sighandler(const enum EVSFSysUtilSignal sig);
 void sysutil_install_sighandler(const enum EVSFSysUtilSignal,

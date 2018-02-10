@@ -119,16 +119,14 @@ int write_file_data(struct ftpd_session *session, int sendfd)
 {
     int send_buf_size = FTPD_DATA_LEN;
     filesize_t total_size = session->transfer_size,already_sended = 0,send_size = 0;
-    int data_rate = session->bw_rate_max * 1000;
-    unsigned int rtt = 0;
+    int data_rate = session->bw_rate_max;
+    unsigned int rtt = 0,time_elapse = 0;
 
     if(total_size < send_buf_size)
         send_buf_size = total_size;
 
     session->bw_send_start_sec = sysutil_get_time_sec();
     session->bw_send_start_usec = sysutil_get_time_usec();
-
-
 
     sysutil_syslog("file sending .....",LOG_USER | LOG_INFO);
     while(send_size < total_size)
@@ -157,7 +155,12 @@ int write_file_data(struct ftpd_session *session, int sendfd)
             sysutil_close(sendfd);
             return -1;
         }
-        send_buf_size = data_rate * 1000 / rtt;
+
+        send_buf_size = data_rate * rtt;
+        char ptr_code[400];
+        snprintf(ptr_code,400,"%u",rtt);
+        sysutil_syslog(ptr_code,LOG_USER | LOG_INFO);
+//                sysutil_syslog(ptr_code,LOG_USER | LOG_INFO);
 //        if(send_size <= total_size)
 //        {
 //            already_sended += send_size;
@@ -666,7 +669,7 @@ int prepare_retr(struct mystr *str_arg,struct ftpd_session *session)
         struct mystr str_cmd = INIT_MYSTR;
         str_append_text(&str_cmd,"opening ");
         if(session->is_ascii)
-            str_append_text(&str_cmd,"ASCII mode");
+            str_append_text(&str_cmd,"ASCII mode data connection for");
         else
             str_append_text(&str_cmd,"BINARY mode data connection for ");
 
@@ -685,8 +688,9 @@ int prepare_retr(struct mystr *str_arg,struct ftpd_session *session)
 
     int retval = 0;
     retval = write_file_data(session, sendfd);
-    if(retval < 0)
+    if(retval < 0) {
         write_cmd_respond(FTPD_CMDWRIO,FTP_BADSENDNET,"Failure writing network stream.\n");
+    }
     else if(retval > 0)
     {
         write_cmd_respond(FTPD_CMDWRIO,FTP_TRANSFEROK,"Transfer complete.\n");
@@ -791,7 +795,7 @@ int prepare_stor(struct mystr *str_arg,struct ftpd_session *session)
     int retval = 0;
     retval = read_file_data(session,recvfd,session->is_ascii);
     if(retval < 0) {
-        write_cmd_respond(FTPD_CMDWRIO,FTP_FILEFAIL,"File receiving failed.\n");
+        write_cmd_respond(FTPD_CMDWRIO,FTP_DATACONN,"Failure reading network stream.\n");
     }else if(retval > 0) {
         write_cmd_respond(FTPD_CMDWRIO,FTP_TRANSFEROK,"Transfer complete.\n");
     }else {

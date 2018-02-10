@@ -23,8 +23,9 @@ void twoprogress(struct ftpd_session *session)
 
     if(retval)
     {
-        sysutil_install_null_sighandler(kVSFSysUtilSigCHLD);
+        //sysutil_install_sighandler(kVSFSysUtilSigCHLD,headle_exit,NULL,0);
         sysutil_install_null_sighandler(kVSFSysUtilSigPIPE);
+        sysutil_install_null_sighandler(kVSFSysUtilSigCHLD);
         close_child_context(session);
         while(1)
         {
@@ -32,6 +33,7 @@ void twoprogress(struct ftpd_session *session)
         }
     }
     close_parent_context(session);
+    sysutil_die_follow_parent();
     del_privilege();
     init_connection(session);
 
@@ -105,14 +107,13 @@ void deal_private_req(struct ftpd_session *session)
     while(1)
     {
         get_internal_cmd_data(session->parent_fd,&str_buf);
-
         parse_cmd(session,&str_buf);
-
         if(!session->login_fails)
             break;
 
         if(sysutil_wait_reap_one())
             sysutil_exit(0);
+
     }
 
     user_common_deal(session);

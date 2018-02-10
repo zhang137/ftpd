@@ -48,6 +48,21 @@ int sysutil_retval_is_error(int retval)
     return 0;
 }
 
+void sysutil_die_follow_parent()
+{
+    int retval = 0;
+    retval = prctl(PR_SET_PDEATHSIG,SIGHUP);
+    if(retval < 0)
+    {
+        die("die with PR_SET_PDEATHSIG");
+    }
+}
+
+void headle_exit(int sig)
+{
+    if(sysutil_wait_reap_one())
+            sysutil_exit(0);
+}
 
 void sysutil_install_null_sighandler(const enum EVSFSysUtilSignal sig)
 {

@@ -80,8 +80,9 @@ void user_common_deal(struct ftpd_session *session)
 
     if(retval)
     {
-        sysutil_install_null_sighandler(kVSFSysUtilSigCHLD);
+        //sysutil_install_sighandler(kVSFSysUtilSigCHLD,headle_exit,NULL,0);
         sysutil_install_null_sighandler(kVSFSysUtilSigPIPE);
+        sysutil_install_null_sighandler(kVSFSysUtilSigCHLD);
         close_child_context(session);
         login_user(session);
 
@@ -94,6 +95,7 @@ void user_common_deal(struct ftpd_session *session)
     str_free(&session->user_str);
     str_free(&session->passwd_str);
 
+    sysutil_die_follow_parent();
     close_parent_context(session);
     del_privilege();
     wait_data_connection(session);
@@ -108,10 +110,12 @@ void common_request(struct ftpd_session *session)
     while(1)
     {
         get_internal_cmd_data(session->parent_fd,&str_buf);
+
         parse_cmd(session,&str_buf);
 
-        if(sysutil_wait_reap_one())
+         if(sysutil_wait_reap_one())
             sysutil_exit(0);
+
     }
     str_free(&str_buf);
 }
