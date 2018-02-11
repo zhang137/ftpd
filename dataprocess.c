@@ -118,6 +118,9 @@ void write_local_transfer_data(int fd, int data_mode,const char *resp_str)
 
 void data_rate_limit_internal(int fd,int count_sum)
 {
+    if(!count_sum)
+        return;
+
     unsigned int rtt = 0;
     int data_time_sum = 0;
     double utime_interval = 0.0;
@@ -147,6 +150,7 @@ int write_file_data(struct ftpd_session *session, int sendfd)
         send_buf_size = total_size;
 
     count_sum = data_rate / FTPD_DATA_LEN;
+
     session->bw_send_start_sec = sysutil_get_time_sec();
     session->bw_send_start_usec = sysutil_get_time_usec();
 
