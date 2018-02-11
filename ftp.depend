@@ -547,7 +547,7 @@
 
 1516157670 /home/usr/projects/ftp/ftpd/controlprocess.h
 
-1518330358 source:/home/usr/projects/ftp/ftpd/dataprocess.c
+1518340530 source:/home/usr/projects/ftp/ftpd/dataprocess.c
 	<stdio.h>
 	<stdlib.h>
 	<unistd.h>
@@ -662,13 +662,7 @@
 	"sysutil.h"
 	"dataprocess.h"
 
-1518330219 source:/home/usr/projects/ftp/ftpd/main.c
-	<stdio.h>
-	<syslog.h>
-	"session.h"
-	"sysutil.h"
-	"strlist.h"
-	"twoprocess.h"
+1518340488 source:/home/usr/projects/ftp/ftpd/main.c
 	<stdio.h>
 	<syslog.h>
 	"session.h"
@@ -726,38 +720,7 @@
 	<stdlib.h>
 	"strlist.h"
 
-1518253932 source:/home/usr/projects/ftp/ftpd/sysutil.c
-	<stdio.h>
-	<stdlib.h>
-	<sys/types.h>
-	<arpa/inet.h>
-	<sys/socket.h>
-	<sys/signal.h>
-	<sys/select.h>
-	<sys/resource.h>
-	<netinet/tcp.h>
-	<netinet/ip.h>
-	<netinet/ip6.h>
-	<ifaddrs.h>
-	<sys/utsname.h>
-	<sys/wait.h>
-	<sys/time.h>
-	<utime.h>
-	<sys/un.h>
-	<syslog.h>
-	<string.h>
-	<limits.h>
-	<signal.h>
-	<fcntl.h>
-	<unistd.h>
-	<netdb.h>
-	<time.h>
-	<ctype.h>
-	<errno.h>
-	<sys/prctl.h>
-	<sys/capability.h>
-	"sysutil.h"
-	"str.h"
+1518332375 source:/home/usr/projects/ftp/ftpd/sysutil.c
 	<stdio.h>
 	<stdlib.h>
 	<sys/types.h>

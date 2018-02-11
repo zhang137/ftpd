@@ -116,24 +116,44 @@ void write_local_transfer_data(int fd, int data_mode,const char *resp_str)
     str_free(&str_respond);
 }
 
+void data_rate_limit_internal(int fd,int count_sum)
+{
+    unsigned int rtt = 0;
+    int data_time_sum = 0;
+    double utime_interval = 0.0;
+
+    if(!(rtt = sysutil_gettcprtt(fd)))
+    {
+        return;
+    }
+    if((data_time_sum = (1000000 - (rtt * count_sum))) < 0)
+    {
+        return;
+    }
+
+    utime_interval = data_time_sum * 1.0 / count_sum * 1.10099;
+    usleep(utime_interval);
+}
+
+
 int write_file_data(struct ftpd_session *session, int sendfd)
 {
     int send_buf_size = FTPD_DATA_LEN;
-    filesize_t total_size = session->transfer_size,already_sended = 0,send_size = 0;
+    filesize_t total_size = session->transfer_size,already_send = 0,send_size = 0;
     int data_rate = session->bw_rate_max * 1024;
-    float rtt = 0.0;
+    unsigned int count_sum = 0;
 
     if(total_size < send_buf_size)
         send_buf_size = total_size;
 
+    count_sum = data_rate / FTPD_DATA_LEN;
     session->bw_send_start_sec = sysutil_get_time_sec();
     session->bw_send_start_usec = sysutil_get_time_usec();
 
     sysutil_syslog("file sending .....",LOG_USER | LOG_INFO);
-    while(send_size < total_size)
+    while(already_send < total_size)
     {
-        send_size += sendfile64(session->data_fd,sendfd,&session->restart_pos,send_buf_size);
-
+        send_size = sendfile64(session->data_fd,sendfd,&session->restart_pos,send_buf_size);
         if(send_size < 0)
         {
             if(errno == EINTR)
@@ -146,6 +166,8 @@ int write_file_data(struct ftpd_session *session, int sendfd)
             return -1;
         }
 
+        already_send += send_size;
+
         if(session->abor_received)
         {
             session->abor_received = 0;
@@ -153,35 +175,8 @@ int write_file_data(struct ftpd_session *session, int sendfd)
             return 0;
         }
 
-        rtt = (sysutil_gettcprtt(session->data_fd) >> 8) * 1.0 / 1000 / 1000;
-        send_buf_size = data_rate * rtt;
+        data_rate_limit_internal(session->data_fd,count_sum);
 
-        char ptr_code[10];
-        snprintf(ptr_code,10,"%f",rtt);
-        sysutil_syslog(ptr_code,LOG_USER | LOG_INFO);
-
-        snprintf(ptr_code,10,"%d",send_buf_size);
-        sysutil_syslog(ptr_code,LOG_USER | LOG_INFO);
-
-//        sysutil_syslog("rtt",LOG_USER | LOG_INFO);
-//        char ptr_code[5];
-//        snprintf(ptr_code,5,"%f",rtt);
-//        sysutil_syslog(ptr_code,LOG_USER | LOG_INFO);
-
-//        if(send_size <= total_size)
-//        {
-//            already_sended += send_size;
-//            session->data_progress =  already_sended * 100 / total_size;
-//
-//            {
-//                struct mystr str_respond = INIT_MYSTR;
-//                char ptr_code[4];
-//                snprintf(ptr_code,4,"%d",session->data_progress);
-//                str_append_text(&str_respond,"data process: ");
-//                str_append_text(&str_respond,ptr_code);
-//                sysutil_syslog(ptr_code,LOG_USER | LOG_INFO);
-//            }
-//        }
     }
     session->restart_pos = 0;
     sysutil_close(sendfd);
