@@ -51,7 +51,7 @@ struct mystr get_rpc_request(struct mystr *str_arg)
 
     nread = get_netdata(&str_line,term);
     if(!nread){
-        sysutil_exit(-1);
+        sysutil_exit(0);
     }
 
     if(str_get_char_at(&str_line,nread-1) == '\r') {

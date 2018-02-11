@@ -8,6 +8,16 @@
 #include "commoncode.h"
 #include "dataprocess.h"
 
+int test_option_internal(struct mystr *str_arg,int opt_len)
+{
+    if(str_isempty(str_arg) || str_getlen(str_arg) > opt_len || str_all_space(str_arg)
+                                                || str_contains_unprintable(str_arg))
+    {
+        return 1;
+    }
+    return 0;
+}
+
 
 void handle_user(struct ftpd_session *session, struct mystr *str_arg)
 {
@@ -28,8 +38,8 @@ void handle_user(struct ftpd_session *session, struct mystr *str_arg)
 
 void handle_pass(struct ftpd_session *session, struct mystr *str_arg)
 {
-    sysutil_syslog("login",LOG_USER | LOG_INFO);
 
+    sysutil_syslog("login",LOG_USER | LOG_INFO);
     if(str_isempty(&session->user_str))
     {
         write_cmd_respond(FTPD_CMDWRIO,FTP_NEEDUSER,"Please first login with USER.\n");
@@ -88,14 +98,30 @@ void handle_cdup(struct ftpd_session *session)
 
 void handle_type(struct ftpd_session *session, struct mystr *str_arg)
 {
-    struct mystr str_buf = INIT_MYSTR;
 
-    str_append_char(&str_buf,PCMDREQUESTTYPE);
-    str_append_char(&str_buf,' ');
-    str_append_str(&str_buf,str_arg);
+    if(test_option_internal(str_arg,2))
+    {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect option.\n");
+        return 0;
+    }
 
-    write_internal_cmd_request(session->child_fd,&str_buf);
-    str_free(&str_buf);
+    if(str_equal_text(str_arg,"I") || str_equal_text(str_arg,"A"))
+    {
+        struct mystr str_buf = INIT_MYSTR;
+        str_append_char(&str_buf,PCMDREQUESTTYPE);
+        str_append_char(&str_buf,' ');
+        str_append_str(&str_buf,str_arg);
+
+        write_internal_cmd_request(session->child_fd,&str_buf);
+        str_free(&str_buf);
+
+    }
+    else
+    {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Only ascii(A) and image(I) modes are supported..\n");
+        return 0;
+    }
+
 
     //deal_parent_respond(session);
 }
@@ -103,8 +129,14 @@ void handle_type(struct ftpd_session *session, struct mystr *str_arg)
 
 void handle_cwd(struct ftpd_session *session, struct mystr *str_arg)
 {
-    struct mystr str_buf = INIT_MYSTR;
 
+    if(test_option_internal(str_arg,128))
+    {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect path.\n");
+        return 0;
+    }
+
+    struct mystr str_buf = INIT_MYSTR;
     str_append_char(&str_buf,PCMDREQUESTCWD);
     str_append_char(&str_buf,' ');
     str_append_str(&str_buf,str_arg);
@@ -130,8 +162,14 @@ void handle_pwd(struct ftpd_session *session)
 
 void handle_dele(struct ftpd_session *session, struct mystr *str_arg)
 {
-    struct mystr str_buf = INIT_MYSTR;
 
+    if(test_option_internal(str_arg,128))
+    {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect filename.\n");
+        return 0;
+    }
+
+    struct mystr str_buf = INIT_MYSTR;
     str_append_char(&str_buf,PCMDREQUESTDELE);
     str_append_char(&str_buf,' ');
     str_append_str(&str_buf,str_arg);
@@ -159,8 +197,14 @@ void handle_list(struct ftpd_session *session)
 
 void handle_mkd(struct ftpd_session *session, struct mystr *str_arg)
 {
-    struct mystr str_buf = INIT_MYSTR;
 
+    if(test_option_internal(str_arg,128))
+    {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect dirname.\n");
+        return 0;
+    }
+
+    struct mystr str_buf = INIT_MYSTR;
     str_append_char(&str_buf,PCMDREQUESTMKD);
     str_append_char(&str_buf,' ');
     str_append_str(&str_buf,str_arg);
@@ -186,8 +230,14 @@ void handle_noop(struct ftpd_session *session)
 
 void handle_size(struct ftpd_session *session, struct mystr *str_arg)
 {
-    struct mystr str_buf = INIT_MYSTR;
 
+    if(test_option_internal(str_arg,128))
+    {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect filename.\n");
+        return 0;
+    }
+
+    struct mystr str_buf = INIT_MYSTR;
     str_append_char(&str_buf,PCMDREQUESTSIZE);
     str_append_char(&str_buf,' ');
     str_append_str(&str_buf,str_arg);
@@ -200,8 +250,14 @@ void handle_size(struct ftpd_session *session, struct mystr *str_arg)
 
 void handle_mdtm(struct ftpd_session *session, struct mystr *str_arg)
 {
-    struct mystr str_buf = INIT_MYSTR;
 
+    if(test_option_internal(str_arg,128))
+    {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect filename.\n");
+        return 0;
+    }
+
+    struct mystr str_buf = INIT_MYSTR;
     str_append_char(&str_buf,PCMDREQUESTMDTM);
     str_append_char(&str_buf,' ');
     str_append_str(&str_buf,str_arg);
@@ -247,8 +303,14 @@ void handle_quit()
 
 void handle_retr(struct ftpd_session *session, struct mystr *str_arg)
 {
-    struct mystr str_buf = INIT_MYSTR;
 
+    if(test_option_internal(str_arg,128))
+    {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect filename.\n");
+        return 0;
+    }
+
+    struct mystr str_buf = INIT_MYSTR;
     str_append_char(&str_buf,PCMDREQUESTRETR);
     str_append_char(&str_buf,' ');
     str_append_str(&str_buf,str_arg);
@@ -260,8 +322,13 @@ void handle_retr(struct ftpd_session *session, struct mystr *str_arg)
 }
 void handle_rmd(struct ftpd_session *session, struct mystr *str_arg)
 {
-    struct mystr str_buf = INIT_MYSTR;
+    if(test_option_internal(str_arg,128))
+    {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect dirname.\n");
+        return 0;
+    }
 
+    struct mystr str_buf = INIT_MYSTR;
     str_append_char(&str_buf,PCMDREQUESTRMD);
     str_append_char(&str_buf,' ');
     str_append_str(&str_buf,str_arg);
@@ -278,8 +345,14 @@ void handle_rnfr(struct ftpd_session *session, struct mystr *str_arg)
 
 void handle_stor(struct ftpd_session *session, struct mystr *str_arg)
 {
-    struct mystr str_buf = INIT_MYSTR;
 
+    if(test_option_internal(str_arg,128))
+    {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect filename.\n");
+        return 0;
+    }
+
+    struct mystr str_buf = INIT_MYSTR;
     str_append_char(&str_buf,PCMDREQUESTSTOR);
     str_append_char(&str_buf,' ');
     str_append_str(&str_buf,str_arg);
@@ -303,8 +376,13 @@ void handle_rest(struct ftpd_session *session, struct mystr *str_arg)
 
 void handle_stou(struct ftpd_session *session, struct mystr *str_arg)
 {
-    struct mystr str_buf = INIT_MYSTR;
+    if(test_option_internal(str_arg,128))
+    {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect filename.\n");
+        return 0;
+    }
 
+    struct mystr str_buf = INIT_MYSTR;
     str_append_char(&str_buf,PCMDREQUESTSTOU);
     str_append_char(&str_buf,' ');
     str_append_str(&str_buf,str_arg);
@@ -315,8 +393,14 @@ void handle_stou(struct ftpd_session *session, struct mystr *str_arg)
 
 void handle_appe(struct ftpd_session *session, struct mystr *str_arg)
 {
-    struct mystr str_buf = INIT_MYSTR;
 
+    if(test_option_internal(str_arg,128))
+    {
+        write_cmd_respond(FTPD_CMDWRIO,FTP_BADOPTS,"Incorrect filename.\n");
+        return 0;
+    }
+
+    struct mystr str_buf = INIT_MYSTR;
     str_append_char(&str_buf,PCMDREQUESTAPPE);
     str_append_char(&str_buf,' ');
     str_append_str(&str_buf,str_arg);
@@ -352,5 +436,7 @@ void handle_syst(struct ftpd_session *session)
     //}
     //write_cmd_respond(FTPD_CMDWRIO,FTP_LOGINERR,"Please login with USER and PASS.\n");
 }
+
+
 
 
