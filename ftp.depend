@@ -538,7 +538,7 @@
 1519697542 source:/home/usr/projects/ftp/ftpd/commoncode.c
 	"commoncode.h"
 
-1519697398 /home/usr/projects/ftp/ftpd/commoncode.h
+1519721776 /home/usr/projects/ftp/ftpd/commoncode.h
 
 1516157670 source:/home/usr/projects/ftp/ftpd/controlprocess.c
 	"controlprocess.h"
@@ -700,7 +700,7 @@
 	<stdlib.h>
 	"strlist.h"
 
-1519717163 source:/home/usr/projects/ftp/ftpd/sysutil.c
+1519723124 source:/home/usr/projects/ftp/ftpd/sysutil.c
 	<stdio.h>
 	<stdlib.h>
 	<sys/types.h>
@@ -730,6 +730,7 @@
 	<errno.h>
 	<sys/prctl.h>
 	<sys/capability.h>
+	"commoncode.h"
 	"sysutil.h"
 	"str.h"
 

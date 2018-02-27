@@ -3,6 +3,7 @@
 
 #define FTPD_CMDWRIO  0
 #define FTPD_CMDRDIO  1
+#define FTPD_CMDERRIO  2
 
 #define FTPD_DATAPORT 20
 #define FTPD_CMDPORT 21
