@@ -12,17 +12,14 @@ void standalone_socket(struct ftpd_session *session)
         sysutil_exit(0);
     }
 
-    if(setsid() < 0)
-    {
-        die("setsid");
-    }
+    sysutil_reopen_standard_fds();
+    sysutil_make_session_leader();
 
     if(sysutil_fork() > 0)
     {
         sysutil_exit(0);
     }
 
-    sysutil_clear_fd();
     sysutil_chdir("/");
     sysutil_set_umask(0);
 
@@ -45,7 +42,6 @@ void standalone_socket(struct ftpd_session *session)
         die("listen");
 
     sysutil_sockaddr_alloc_ipv4(&client_addr);
-
     sysutil_install_null_sighandler(kVSFSysUtilSigCHLD);
 
     while(1)

@@ -458,7 +458,6 @@ int prepare_pasv_pattern(struct ftpd_session *session)
         str_free(&port_real);
         str_free(&port_imaginary);
     }
-    usleep(100000);
 
     struct sysutil_sockaddr *remote = NULL;
     //socklen_t sock_len = sizeof(*remote);
@@ -868,7 +867,6 @@ int prepare_rest(struct mystr *str_arg,struct ftpd_session *session)
 {
     struct mystr str_buf = INIT_MYSTR;
     str_split_char(str_arg,&str_buf,' ');
-    struct sysutil_statbuf *statbuf = NULL;
 
     session->restart_pos = sysutil_atoi(str_buf.pbuf);
 

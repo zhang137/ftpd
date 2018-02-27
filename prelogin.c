@@ -75,7 +75,7 @@ void user_common_deal(struct ftpd_session *session)
 {
     int retval;
 
-    set_private_unix_socket(session);
+    create_private_unix_socket(session);
     retval = sysutil_fork();
 
     if(retval)
@@ -97,7 +97,7 @@ void user_common_deal(struct ftpd_session *session)
 
     sysutil_die_follow_parent();
     close_parent_context(session);
-    del_privilege();
+    drop_all_privs();
     wait_data_connection(session);
 
 }

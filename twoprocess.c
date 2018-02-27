@@ -9,38 +9,37 @@
 #include "dataprocess.h"
 #include "ftpcode.h"
 #include "commoncode.h"
-
-extern const char* const tunable_nobody;
+#include "tunable.h"
 
 
 void twoprogress(struct ftpd_session *session)
 {
     int retval;
-    set_private_unix_socket(session);
+    create_private_unix_socket(session);
 
-    write_cmd_respond(FTPD_CMDWRIO,FTP_GREET,"Welcome to zyy's ftpd\n");
     retval = sysutil_fork();
+    sysutil_install_null_sighandler(kVSFSysUtilSigPIPE);
+    sysutil_install_null_sighandler(kVSFSysUtilSigCHLD);
 
     if(retval)
     {
-        //sysutil_install_sighandler(kVSFSysUtilSigCHLD,headle_exit,NULL,0);
-        sysutil_install_null_sighandler(kVSFSysUtilSigPIPE);
-        sysutil_install_null_sighandler(kVSFSysUtilSigCHLD);
         close_child_context(session);
         while(1)
         {
-            deal_private_req(session);
+            process_login_req(session);
         }
     }
+
+    write_cmd_respond(FTPD_CMDWRIO,FTP_GREET,"Welcome to zyy's ftpd\n");
     close_parent_context(session);
     sysutil_die_follow_parent();
-    del_privilege();
+    drop_all_privs();
     init_connection(session);
 
 
 }
 
-void set_private_unix_socket(struct ftpd_session *session)
+void create_private_unix_socket(struct ftpd_session *session)
 {
     struct sysutil_socketpair_retval sockpair;
 
@@ -61,7 +60,7 @@ void close_child_context(struct ftpd_session *session)
     session->child_fd = -1;
 }
 
-void del_privilege()
+void drop_all_privs()
 {
     int res;
     int saved_uid,saved_gid;
@@ -99,7 +98,7 @@ void del_privilege()
 
 }
 
-void deal_private_req(struct ftpd_session *session)
+void process_login_req(struct ftpd_session *session)
 {
     struct mystr str_buf = INIT_MYSTR;
     private_str_alloc_memchunk(&str_buf,NULL,FTPD_UNIXSOCK_LEN);
@@ -108,6 +107,7 @@ void deal_private_req(struct ftpd_session *session)
     {
         get_internal_cmd_data(session->parent_fd,&str_buf);
         parse_cmd(session,&str_buf);
+
         if(!session->login_fails)
             break;
 

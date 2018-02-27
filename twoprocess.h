@@ -5,13 +5,13 @@
 
 void twoprogress(struct ftpd_session *session);
 
-void deal_private_req(struct ftpd_session *session);
+void process_login_req(struct ftpd_session *session);
 
 void close_parent_context(struct ftpd_session *session);
 
 void close_child_context(struct ftpd_session *session);
 
-void del_privilege();
+void drop_all_privs();
 
 int parse_cmd(struct ftpd_session *session, struct mystr *p_str);
 

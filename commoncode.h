@@ -75,5 +75,4 @@ enum PUNIXCMDTYPE
 };
 
 
-
 #endif // COMMONCODE_H_INCLUDED

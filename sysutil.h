@@ -14,20 +14,6 @@
 #define sysutil_dir DIR
 #define sysutil_statbuf stat
 
-int saved_errno;
-
-void die(const char *exit_str);
-
-struct sysutil_sockaddr
-{
-  union
-  {
-    struct sockaddr u_sockaddr;
-    struct sockaddr_in u_sockaddr_in;
-    struct sockaddr_in6 u_sockaddr_in6;
-  } u;
-};
-
 enum EVSFSysUtilError
 {
   kVSFSysUtilErrUnknown = 1,
@@ -64,13 +50,13 @@ enum EVSFSysUtilError sysutil_get_error(void);
 void sysutil_die_follow_parent();
 void headle_exit(int sig);
 
-
 int  sysutil_retval_is_error(int retval);
 void sysutil_install_null_sighandler(const enum EVSFSysUtilSignal sig);
 void sysutil_install_sighandler(const enum EVSFSysUtilSignal,
                                     async_sighandle_t handler,
                                     void* p_private,
                                     int use_alarm);
+
 void sysutil_install_async_sighandler(const enum EVSFSysUtilSignal sig,
                                           async_sighandle_t handler);
 void sysutil_default_sig(const enum EVSFSysUtilSignal sig);
